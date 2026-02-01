@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>毎日日程表２４ v4.6.3 RESCUE</title>
+    <style>
+        :root {
+            --bg: #b0bec5;
+            --accent: #1a237e;
+            --font-size: 11px;
+        }
+
+        * { box-sizing: border-box; font-family: sans-serif; }
+        body { background: var(--bg); margin: 0; padding: 10px; font-size: var(--font-size); color: #000; overflow-x: hidden; }
+
+        /* Login Screen - 絶対に最前面に表示 */
+        #login-overlay { 
+            position: fixed; top:0; left:0; width:100%; height:100%; 
+            background:#1a237e; z-index:9999; 
+            display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; 
+        }
+
+        header { 
+            display: flex; justify-content: space-between; align-items: center;
+            background: #fff; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        #current-day-badge { background: var(--accent); color: white; padding: 2px 12px; border-radius: 20px; font-weight: bold; margin-left: 10px; }
+
+        .btn { border: 1px solid #333; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; background: #eee; font-weight: bold; }
+        .btn-primary { background: var(--accent); color: white; border: none; }
+
+        .date-tabs { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-bottom: 8px; }
+        .date-btn { background: #fff; border: 1px solid #777; padding: 6px; text-align: center; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .date-btn.active { background: var(--accent); color: white; border: none; }
+
+        .todo-section { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #fff; padding: 12px; border-radius: 8px; margin-bottom: 8px; }
+        .todo-card { border: 2px solid #333; padding: 5px; border-radius: 6px; display: flex; align-items: center; gap: 5px; background: white; position: relative; }
+        .todo-card.is-finished { background: #cfd8dc !important; opacity: 0.6; }
+        .todo-card input[type="text"] { flex: 1; border: none; outline: none; font-weight: bold; font-size: 12px; }
+        
+        /* TODO Popup Palette */
+        .todo-color-dot { width: 22px; height: 22px; border-radius: 4px; border: 1px solid #000; cursor: pointer; }
+        .todo-palette-popup {
+            display: none; position: absolute; top: 32px; left: 0; width: 130px;
+            background: white; border: 2px solid #333; border-radius: 6px; padding: 6px;
+            grid-template-columns: repeat(5, 1fr); gap: 4px; z-index: 5000; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .mini-color-dot { width: 20px; height: 20px; border-radius: 3px; cursor: pointer; border: 1px solid #ccc; }
+
+        /* Foldable Timeline Parts */
+        .part-header {
+            background: #37474f; color: white; padding: 6px 10px; cursor: pointer;
+            font-weight: bold; display: flex; justify-content: space-between; align-items: center;
+            border: 2px solid #000; margin-top: -2px;
+        }
+        .part-header::after { content: "▲ 表示中"; font-size: 9px; }
+        .part-header.collapsed::after { content: "▼ 折りたたみ中"; }
+
+        .timeline-container { background: #fff; border: 3px solid #000; border-radius: 0 0 8px 8px; overflow: hidden; margin-bottom: 8px; }
+        .time-row { display: grid; grid-template-columns: 55px 1fr; border-bottom: 1px solid #000; height: 56px; position: relative; }
+        .time-row.collapsed { display: none; }
+        .hour-label { background: #ddd; text-align: center; line-height: 56px; font-weight: bold; border-right: 3px solid #000; font-size: 14px; }
+        
+        /* v4.3 Dotted Blinking */
+        .minute-cells { display: grid; grid-template-columns: repeat(12, 1fr); height: 100%; position: relative; }
+        .cell { border-right: 1px solid #444; height: 100%; cursor: cell; z-index: 1; position: relative; }
+        .cell:nth-child(3n) { border-right: 3px solid #333; }
+        .cell:nth-child(6n) { border-right: 4px solid #000; }
+        .cell:hover { background: rgba(37, 99, 235, 0.05); }
+        .cell.blink-target { 
+            border-bottom: 4px dotted #1a237e !important;
+            animation: flash 0.6s infinite;
+        }
+        @keyframes flash { 50% { border-color: transparent; } }
+
+        .act-block {
+            position: absolute; border: 1px solid rgba(0,0,0,0.5); border-radius: 4px;
+            color: white; font-weight: bold; font-size: 11px; padding: 2px 6px;
+            overflow: hidden; white-space: nowrap; cursor: move; z-index: 10;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+        }
+
+        .bottom-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px; }
+        .info-panel { background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #777; }
+        .info-panel textarea { width: 100%; height: 180px; border: 2px solid #000; padding: 10px; font-size: 14px; resize: none; font-weight: bold; }
+
+        .link-row { display: flex; gap: 4px; margin-bottom: 4px; }
+        .link-row input { border: 1px solid #777; border-radius: 3px; padding: 2px; font-size: 11px; }
+
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; padding: 20px; z-index: 3000; box-shadow: 0 0 100px rgba(0,0,0,0.5); width: 350px; }
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 2500; }
+        .palette { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
+        .color-dot-choice { width: 100%; height: 28px; border-radius: 4px; cursor: pointer; border: 1px solid #ccc; }
+    </style>
+</head>
+<body onclick="closeTodoPopups()">
+
+    <div id="login-overlay">
+        <h1>DAILY SCHEDULE 24</h1>
+        <div style="margin-top:20px;">
+            <input type="password" id="pw-input" placeholder="PASS: 1234" style="padding:12px; font-size:18px; border-radius:8px; border:none; width:220px;" onkeydown="if(event.key==='Enter') checkLogin()">
+            <button class="btn btn-primary" style="height:45px; width:100px; font-size:16px; margin-left:10px;" onclick="checkLogin()">ログイン</button>
+        </div>
+    </div>
+
+    <header>
+        <div style="display:flex; align-items:center;">
+            <h1>📅 毎日日程表２４</h1>
+            <input type="date" id="calendar-picker" onchange="loadDate(this.value)" style="margin-left:10px;">
+            <span id="current-day-badge"></span>
+        </div>
+        <div style="display:flex; gap:6px;">
+            <button class="btn" onclick="openPreview()">プレビュー</button>
+            <button class="btn" onclick="exportJSON()">同期(出)</button>
+            <button class="btn" onclick="document.getElementById('file-input').click()">同期(入)</button>
+            <input type="file" id="file-input" style="display:none" onchange="importJSON(event)">
+            <button class="btn btn-primary" onclick="saveData(true)">💾 即時保存</button>
+        </div>
+    </header>
+
+    <div id="date-ui" class="date-tabs"></div>
+    <div class="todo-section" id="todo-ui"></div>
+
+    <div class="timeline-container" id="timeline-ui"></div>
+
+    <div class="bottom-grid">
+        <div class="info-panel">
+            <strong>DIARY (内省・反省)</strong>
+            <textarea id="diary-text" placeholder="今日の振り返りを詳しく記入してください..."></textarea>
+        </div>
+        <div class="info-panel">
+            <strong>LINKS & NOTICES</strong>
+            <div id="link-ui" style="margin-top:5px;"></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="modal-overlay" onclick="closeModals()"></div>
+    <div class="modal" id="edit-modal">
+        <h3>予定の編集</h3>
+        内容: <input type="text" id="edit-name" style="width:100%; padding:10px;"><br><br>
+        所要時間(分): <input type="number" id="edit-duration" step="5" style="width:100%; padding:10px;"><br>
+        <div class="palette" id="edit-palette"></div>
+        <input type="hidden" id="edit-color-val">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
+            <button class="btn btn-primary" onclick="updateActivity()">更新保存</button>
+            <button class="btn" onclick="copyToNextDay()">翌日へ複写</button>
+            <button class="btn" onclick="deleteActivity()" style="color:red">削除</button>
+            <button class="btn" onclick="closeModals()">閉じる</button>
+        </div>
+    </div>
+
+    <div class="modal" id="preview-modal" style="width:90%; max-height:85vh; overflow-y:auto;">
+        <h3>記録プレビュー</h3>
+        <div id="preview-content" style="border:2px solid #000; padding:15px; background:#fff;"></div>
+        <button class="btn btn-primary" style="margin-top:10px; width:100%; height:45px;" onclick="window.print()">印刷出力</button>
+    </div>
+
+    <script>
+        const COLORS = ["#E6194B", "#3CB44B", "#FFE119", "#4363D8", "#F58231", "#911EB4", "#42D4F4", "#F032E6", "#BFEF45", "#FABED4", "#469990", "#DCBEFF", "#9A6324", "#FFFAC8", "#800000"];
+        const DEFAULT_LINKS = [
+            { name: "ブックマーク", url: "https://dy8714-dotcom.github.io/my-bookmarks/" },
+            { name: "株探トップ", url: "https://kabutan.jp/" },
+            { name: "Trading view", url: "https://jp.tradingview.com/chart/IIxvK6BE/" },
+            { name: "帳簿 シート", url: "https://docs.google.com/spreadsheets/d/1fI5KFLYh8gtctBMdeCcojS-j6PIgO3PJnQRCUsS4eoc/edit?gid=531074575#gid=531074575" },
+            { name: "ポモドーロ", url: "https://dy8714-dotcom.github.io/-/" }
+        ];
+
+        let db = JSON.parse(localStorage.getItem('DAILY24_V463_DB')) || {};
+        let masterTodos = JSON.parse(localStorage.getItem('DAILY24_MASTER_TODOS')) || [];
+        let currentDate = new Date().toISOString().split('T')[0];
+        let dragInfo = null;
+        let editIdx = null;
+
+        // ログイン処理を最優先
+        function checkLogin() { 
+            const pw = document.getElementById('pw-input').value;
+            if (pw === '1234') { 
+                document.getElementById('login-overlay').style.display = 'none'; 
+                init(); 
+            } else {
+                alert("パスワードが違います");
+            }
+        }
+
+        function init() {
+            renderTimelineGrid();
+            renderPalette();
+            loadDate(currentDate);
+        }
+
+        function renderPalette() {
+            const container = document.getElementById('edit-palette'); container.innerHTML = '';
+            COLORS.forEach(c => {
+                const d = document.createElement('div'); d.className = 'color-dot-choice'; d.style.background = c;
+                d.onclick = () => { document.getElementById('edit-color-val').value = c; container.querySelectorAll('.color-dot-choice').forEach(x => x.style.border='1px solid #ccc'); d.style.border='3px solid #000'; };
+                container.appendChild(d);
+            });
+        }
+
+        function renderDates(base) {
+            const ui = document.getElementById('date-ui'); ui.innerHTML = '';
+            const curr = new Date(base);
+            for(let i=-4; i<=5; i++){
+                let d = new Date(curr); d.setDate(curr.getDate() + i);
+                let iso = d.toISOString().split('T')[0];
+                let btn = document.createElement('div'); btn.className = `date-btn ${iso === currentDate ? 'active' : ''}`;
+                btn.innerText = `${d.getMonth()+1}/${d.getDate()}(${['日','月','火','水','木','金','土'][d.getDay()]})`;
+                btn.onclick = () => loadDate(iso); ui.appendChild(btn);
+            }
+        }
+
+        function renderTodos() {
+            const ui = document.getElementById('todo-ui'); ui.innerHTML = '';
+            for(let i=0; i<9; i++){
+                const isPomo = i >= 6;
+                const saved = masterTodos[i] || {};
+                const div = document.createElement('div'); div.className = `todo-card ${saved.finished ? 'is-finished' : ''}`;
+                const currentColor = isPomo ? "#E6194B" : (saved.color || COLORS[i % COLORS.length]);
+                
+                div.innerHTML = `
+                    <input type="checkbox" class="t-check" ${saved.done ? 'checked' : ''}>
+                    <input type="text" class="t-text" value="${saved.text || (isPomo ? 'ポモドーロ '+(i-5) : '予定 '+(i+1))}">
+                    <input type="number" class="t-time time-input" value="${saved.mins || (isPomo ? 25 : 15)}" step="5">
+                    <div class="todo-color-dot" style="background:${currentColor}" onclick="showTodoPopup(event, ${i})"></div>
+                    <div class="todo-palette-popup" id="todo-popup-${i}"></div>
+                    <button class="btn" style="padding:2px 5px; font-size:9px;" onclick="toggleFinish(this)">済</button>
+                `;
+
+                const popup = div.querySelector('.todo-palette-popup');
+                COLORS.forEach(c => {
+                    const d = document.createElement('div'); d.className = 'mini-color-dot'; d.style.background = c;
+                    d.onclick = (e) => { e.stopPropagation(); setTodoColor(i, c); popup.style.display = 'none'; };
+                    popup.appendChild(d);
+                });
+
+                div.draggable = true;
+                div.ondragstart = () => { dragInfo = { type:'new', name: div.querySelector('.t-text').value, mins: parseInt(div.querySelector('.t-time').value), color: div.querySelector('.todo-color-dot').style.backgroundColor }; };
+                ui.appendChild(div);
+            }
+        }
+
+        function showTodoPopup(e, i) { e.stopPropagation(); closeTodoPopups(); document.getElementById(`todo-popup-${i}`).style.display = 'grid'; }
+        function closeTodoPopups() { document.querySelectorAll('.todo-palette-popup').forEach(p => p.style.display = 'none'); }
+        function setTodoColor(idx, color) { document.querySelectorAll('.todo-card')[idx].querySelector('.todo-color-dot').style.backgroundColor = color; saveData(false); }
+        function toggleFinish(btn) { btn.closest('.todo-card').classList.toggle('is-finished'); saveData(false); }
+
+        function renderTimelineGrid() {
+            const ui = document.getElementById('timeline-ui'); ui.innerHTML = '';
+            const parts = [
+                { id: "morning", name: "朝パート (5:00-8:00)", range: [5, 6, 7, 8] },
+                { id: "work", name: "仕事パート (9:00-17:00)", range: [9, 10, 11, 12, 13, 14, 15, 16, 17] },
+                { id: "night", name: "夜パート (18:00-24:00)", range: [18, 19, 20, 21, 22, 23, 24] }
+            ];
+
+            parts.forEach(p => {
+                const pHeader = document.createElement('div');
+                pHeader.className = 'part-header collapsed';
+                pHeader.innerText = p.name;
+                pHeader.onclick = () => {
+                    pHeader.classList.toggle('collapsed');
+                    document.querySelectorAll(`.row-part-${p.id}`).forEach(r => r.classList.toggle('collapsed'));
+                };
+                ui.appendChild(pHeader);
+
+                p.range.forEach(h => {
+                    const row = document.createElement('div');
+                    row.className = `time-row row-part-${p.id} collapsed`;
+                    row.dataset.h = h;
+                    row.innerHTML = `<div class="hour-label">${h}</div><div class="minute-cells"></div>`;
+                    const cells = row.querySelector('.minute-cells');
+                    for(let m=0; m<12; m++) {
+                        const cell = document.createElement('div'); cell.className = 'cell';
+                        cell.onmousemove = (e) => { if(e.offsetY > 26) cell.classList.add('blink-target'); else cell.classList.remove('blink-target'); };
+                        cell.onmouseleave = () => cell.classList.remove('blink-target');
+                        cell.onclick = (e) => { const lane = e.offsetY > 26 ? 1 : 0; manualAdd(h, m*5, lane); };
+                        cell.ondragover = (e) => { e.preventDefault(); if(e.offsetY > 26) cell.classList.add('blink-target'); else cell.classList.remove('blink-target'); };
+                        cell.ondrop = (e) => { cell.classList.remove('blink-target'); const lane = e.offsetY > 26 ? 1 : 0; handleDrop(h, m*5, lane); };
+                        cells.appendChild(cell);
+                    }
+                    ui.appendChild(row);
+                });
+            });
+        }
+
+        function loadDate(iso) {
+            currentDate = iso; document.getElementById('calendar-picker').value = iso; document.getElementById('current-day-badge').innerText = iso;
+            renderDates(iso); renderTodos();
+            if(!db[iso]) { db[iso] = { acts: [{h:5, m:0, duration:90, name:"就寝中", color:"#469990", lane:0}, {h:24, m:30, duration:30, name:"就寝中", color:"#469990", lane:0}], diary: "", links: DEFAULT_LINKS }; }
+            document.getElementById('diary-text').value = db[iso].diary || "";
+            const linkArea = document.getElementById('link-ui'); linkArea.innerHTML = '';
+            (db[iso].links || DEFAULT_LINKS).forEach(l => { linkArea.innerHTML += `<div class="link-row"><input type="text" class="l-name" style="width:105px;" value="${l.name}"><input type="text" class="l-url" style="flex:1;" value="${l.url}"><button class="btn" onclick="window.open(this.previousElementSibling.value)">🚀</button></div>`; });
+            refreshTimeline();
+        }
+
+        function refreshTimeline() {
+            document.querySelectorAll('.act-block').forEach(b => b.remove());
+            const acts = db[currentDate].acts || [];
+            acts.forEach((a, idx) => {
+                let rem = a.duration; let curH = a.h; let curM = a.m;
+                while(rem > 0 && curH <= 24) {
+                    const rowCells = document.querySelector(`.time-row[data-h="${curH}"] .minute-cells`);
+                    if(!rowCells) break;
+                    let dur = Math.min(rem, 60 - curM);
+                    const div = document.createElement('div'); div.className = 'act-block'; div.draggable = true;
+                    div.style.left = `${(curM/60)*100}%`; div.style.width = `${(dur/60)*100}%`;
+                    div.style.backgroundColor = a.color; div.innerText = (curM===a.m)?a.name:"";
+                    const isOverlapping = acts.some((o, oi) => oi !== idx && o.h === a.h && o.m === a.m);
+                    if(isOverlapping || a.lane === 1) { div.style.height = '24px'; div.style.top = (a.lane === 1) ? '28px' : '2px'; }
+                    else { div.style.height = '48px'; div.style.top = '3px'; }
+                    div.onclick = (e) => { e.stopPropagation(); openEdit(idx); };
+                    div.ondragstart = () => { dragInfo = { type:'move', index: idx, data: a }; };
+                    rowCells.appendChild(div); rem -= dur; curH++; curM = 0;
+                }
+            });
+        }
+
+        function handleDrop(h, m, lane) {
+            if(!dragInfo) return;
+            if(dragInfo.type === 'move') { db[currentDate].acts.splice(dragInfo.index, 1); db[currentDate].acts.push({ h, m, duration: dragInfo.data.duration, name: dragInfo.data.name, color: dragInfo.data.color, lane: lane }); }
+            else { db[currentDate].acts.push({ h, m, duration: dragInfo.mins, name: dragInfo.name, color: dragInfo.color, lane: lane }); }
+            saveData(false); refreshTimeline(); dragInfo = null;
+        }
+
+        function manualAdd(h, m, lane) { db[currentDate].acts.push({ h, m, duration: 15, name: "新規予定", color: COLORS[3], lane: lane }); saveData(false); refreshTimeline(); }
+
+        function saveData(showMsg) {
+            masterTodos = Array.from(document.querySelectorAll('.todo-card')).map(c => ({ done: c.querySelector('.t-check').checked, text: c.querySelector('.t-text').value, mins: c.querySelector('.t-time').value, color: c.querySelector('.todo-color-dot').style.backgroundColor, finished: c.classList.contains('is-finished') }));
+            localStorage.setItem('DAILY24_MASTER_TODOS', JSON.stringify(masterTodos));
+            db[currentDate] = { acts: db[currentDate]?.acts || [], diary: document.getElementById('diary-text').value, links: Array.from(document.querySelectorAll('.link-row')).map(r => ({ name: r.querySelector('.l-name').value, url: r.querySelector('.l-url').value })) };
+            localStorage.setItem('DAILY24_V463_DB', JSON.stringify(db));
+            if(showMsg) alert("即時保存しました");
+        }
+
+        function openEdit(idx) {
+            editIdx = idx; const a = db[currentDate].acts[idx];
+            document.getElementById('edit-name').value = a.name; document.getElementById('edit-duration').value = a.duration; document.getElementById('edit-color-val').value = a.color;
+            document.getElementById('modal-overlay').style.display = 'block'; document.getElementById('edit-modal').style.display = 'block';
+            document.getElementById('edit-palette').querySelectorAll('.color-dot-choice').forEach(d => { d.style.border = (rgb2hex(d.style.backgroundColor).toUpperCase() === a.color.toUpperCase()) ? '3px solid #000' : '1px solid #ccc'; });
+        }
+
+        function updateActivity() { const a = db[currentDate].acts[editIdx]; a.name = document.getElementById('edit-name').value; a.duration = parseInt(document.getElementById('edit-duration').value); a.color = document.getElementById('edit-color-val').value; saveData(false); loadDate(currentDate); closeModals(); }
+        function openPreview() {
+            const data = db[currentDate];
+            let html = `<strong>【${currentDate}】 プレビュー</strong><hr><table border="1" style="width:100%; border-collapse:collapse; background:white;">`;
+            [...data.acts].sort((a,b)=>(a.h*60+a.m)-(b.h*60+b.m)).forEach(a => { html += `<tr><td style="padding:8px;">${a.h}:${String(a.m).padStart(2,'0')}</td><td style="border-left:15px solid ${a.color}">${a.name}</td></tr>`; });
+            html += `</table><div style="margin-top:20px;"><strong>日記:</strong><br>${data.diary.replace(/\n/g,'<br>')}</div>`;
+            document.getElementById('preview-content').innerHTML = html;
+            document.getElementById('modal-overlay').style.display = 'block'; document.getElementById('preview-modal').style.display = 'block';
+        }
+
+        function closeModals() { document.querySelectorAll('.modal, .overlay').forEach(x => x.style.display = 'none'); }
+        function deleteActivity() { db[currentDate].acts.splice(editIdx, 1); saveData(false); refreshTimeline(); closeModals(); }
+        function copyToNextDay() { const a = {...db[currentDate].acts[editIdx]}; const d = new Date(currentDate); d.setDate(d.getDate() + 1); const next = d.toISOString().split('T')[0]; if(!db[next]) db[next] = { acts:[], diary:"", links:DEFAULT_LINKS }; db[next].acts.push(a); localStorage.setItem('DAILY24_V463_DB', JSON.stringify(db)); alert("翌日へ複写"); }
+        function rgb2hex(rgb) { if(!rgb || !rgb.startsWith('rgb')) return rgb; const m = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/); return "#" + ("0"+parseInt(m[1]).toString(16)).slice(-2).toUpperCase() + ("0"+parseInt(m[2]).toString(16)).slice(-2).toUpperCase() + ("0"+parseInt(m[3]).toString(16)).slice(-2).toUpperCase(); }
+        function exportJSON() { const b = new Blob([JSON.stringify(db)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'daily24_data.json'; a.click(); }
+        function importJSON(e) { const r = new FileReader(); r.onload = () => { db = JSON.parse(r.result); loadDate(currentDate); alert("同期完了"); }; r.readAsText(e.target.files[0]); }
+    </script>
+</body>
+</html>
