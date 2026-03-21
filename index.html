@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>毎日日程表２４ v5.4</title>
+    <title>毎日日程表２４ v5.5</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -186,7 +186,7 @@
         .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px}
 
         @media(max-width:1100px){.sidebar{width:280px}}
-        @media(max-width:900px){.sidebar{display:none}}
+        @media(max-width:900px){.app-shell{flex-direction:column}.sidebar{width:100%;position:static;order:10}}
         @media(max-width:768px){.date-tabs{grid-template-columns:repeat(5,1fr)}.date-btn-extra{display:none}.todo-section{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.time-row{height:52px;grid-template-columns:44px 1fr}.minute-header-row{grid-template-columns:44px 1fr;height:20px}.modal{width:95vw}}
         @media(max-width:480px){.app-title{font-size:13px}.date-tabs{grid-template-columns:repeat(5,1fr);gap:3px}.todo-section{grid-template-columns:1fr}.btn-label{display:none}}
         ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
@@ -200,7 +200,7 @@
 <body onclick="closeTodoPopups()">
 <div id="login-overlay"><div class="login-box">
     <div class="login-title">📅 DAILY SCHEDULE 24</div>
-    <div class="login-subtitle">v5.4 — Google Calendar & Firebase 連携</div>
+    <div class="login-subtitle">v5.5 — Google Calendar & Firebase 連携</div>
     <div class="login-field">
         <input type="password" id="pw-input" placeholder="パスワード" onkeydown="if(event.key==='Enter')checkLogin()">
         <button onclick="checkLogin()">ログイン</button>
@@ -493,7 +493,12 @@ function updateSyncStatus(on){
 function startRealtimeSync(){
     if(!firebaseReady||!userDocId)return;if(fbUnsub)fbUnsub();
     fbUnsub=firestoreDb.collection('schedules').doc(userDocId).onSnapshot(doc=>{
-        if(doc.exists&&!isSyncingFromCloud){const c=doc.data();if(c.db){
+        if(doc.exists&&!isSyncingFromCloud){
+            // 入力中（フォーカス中）は再描画をスキップ
+            const ae=document.activeElement;
+            const isTyping=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA');
+            if(isTyping)return;
+            const c=doc.data();if(c.db){
             isSyncingFromCloud=true;db=JSON.parse(c.db);
             masterTodos=c.todos?JSON.parse(c.todos):masterTodos;notices=c.notices?JSON.parse(c.notices):notices;
             localStorage.setItem('D24_DB',JSON.stringify(db));localStorage.setItem('D24_TODOS',JSON.stringify(masterTodos));
@@ -524,7 +529,7 @@ let dragInfo=null,editIdx=null,autoSaveTimer=null;
 //  即時同期
 // ================================================================
 function flashAutoSave(){const el=document.getElementById('autosave-ind');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1200);}
-function triggerAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{saveDataSilent();flashAutoSave();},400);}
+function triggerAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{saveDataSilent();flashAutoSave();},8000);}
 function saveDataSilent(){
     collectTodos();collectNotices();
     db[currentDate]={acts:db[currentDate]?.acts||[],diary:document.getElementById('diary-text').value};
