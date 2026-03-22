@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>毎日日程表２４ v5.5</title>
+    <title>毎日日程表２４ v5.6</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -172,6 +172,17 @@
         .notice-row .notice-num{font-size:10px;font-weight:800;color:var(--text-muted);width:18px;text-align:center;flex-shrink:0;font-family:var(--font-mono)}
         .notice-row input{flex:1;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:var(--font-body);color:var(--text);background:var(--surface-alt);font-weight:500}
         .notice-row input:focus{border-color:var(--accent);outline:none}
+        .notice-copy-btn{padding:4px 8px;font-size:9px;font-weight:700;border-radius:5px;border:1px solid var(--border-strong);background:var(--surface-alt);cursor:pointer;color:var(--text-muted);white-space:nowrap;transition:var(--transition)}
+        .notice-copy-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+        .goals-section{background:var(--surface);padding:14px;border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow-sm);margin-top:10px}
+        .goals-title{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+        .goals-title button{padding:6px 14px;font-size:11px;font-weight:700;border:1.5px solid var(--accent);border-radius:6px;background:var(--accent-light);color:var(--accent);cursor:pointer;transition:var(--transition)}
+        .goals-title button:hover{background:var(--accent);color:#fff}
+        .goal-row{display:flex;gap:6px;margin-bottom:5px;align-items:center}
+        .goal-row .goal-num{font-size:10px;font-weight:800;color:var(--text-muted);width:22px;text-align:center;flex-shrink:0;font-family:var(--font-mono)}
+        .goal-row input{flex:1;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:var(--font-body);color:var(--text);background:var(--surface-alt);font-weight:500}
+        .goal-row input:focus{border-color:var(--accent);outline:none}
 
         .overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:2500;backdrop-filter:blur(4px)}
         .modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border-radius:var(--radius-lg);padding:24px;z-index:3000;box-shadow:var(--shadow-xl);width:380px;max-width:95vw;animation:modalIn .25s ease-out}
@@ -200,7 +211,7 @@
 <body onclick="closeTodoPopups()">
 <div id="login-overlay"><div class="login-box">
     <div class="login-title">📅 DAILY SCHEDULE 24</div>
-    <div class="login-subtitle">v5.5 — Google Calendar & Firebase 連携</div>
+    <div class="login-subtitle">v5.6 — Google Calendar & Firebase 連携</div>
     <div class="login-field">
         <input type="password" id="pw-input" placeholder="パスワード" onkeydown="if(event.key==='Enter')checkLogin()">
         <button onclick="checkLogin()">ログイン</button>
@@ -266,6 +277,10 @@
     <div class="bottom-grid">
         <div class="info-panel"><div class="info-panel-title">📝 Diary — 内省・反省</div><textarea id="diary-text" placeholder="今日の振り返りを記入してください…"></textarea></div>
         <div class="info-panel"><div class="info-panel-title">📌 Notices — 連絡事項</div><div id="notices-ui"></div></div>
+    </div>
+    <div class="goals-section">
+        <div class="goals-title"><span>🎯 今月の目標</span><button onclick="copyAllGoalsToNextDay()">📋 まとめて翌日に複写</button></div>
+        <div id="goals-ui"></div>
     </div>
 </div>
 </div>
@@ -500,17 +515,16 @@ function startRealtimeSync(){
             if(isTyping)return;
             const c=doc.data();if(c.db){
             isSyncingFromCloud=true;db=JSON.parse(c.db);
-            masterTodos=c.todos?JSON.parse(c.todos):masterTodos;notices=c.notices?JSON.parse(c.notices):notices;
+            masterTodos=c.todos?JSON.parse(c.todos):masterTodos;
             localStorage.setItem('D24_DB',JSON.stringify(db));localStorage.setItem('D24_TODOS',JSON.stringify(masterTodos));
-            localStorage.setItem('D24_NOTICES',JSON.stringify(notices));
-            renderNotices();loadDate(currentDate);setTimeout(()=>{isSyncingFromCloud=false;},500);
+            renderNotices();renderGoals();loadDate(currentDate);setTimeout(()=>{isSyncingFromCloud=false;},500);
         }}
     },()=>updateSyncStatus(false));
 }
 function saveToCloud(){
     if(!firebaseReady||!userDocId||isSyncingFromCloud)return;
     firestoreDb.collection('schedules').doc(userDocId).set({
-        db:JSON.stringify(db),todos:JSON.stringify(masterTodos),notices:JSON.stringify(notices),
+        db:JSON.stringify(db),todos:JSON.stringify(masterTodos),
         updatedAt:firebase.firestore.FieldValue.serverTimestamp()
     }).catch(()=>{});
 }
@@ -521,7 +535,6 @@ function saveToCloud(){
 const COLORS=["#2563eb","#dc2626","#16a34a","#d97706","#7c3aed","#db2777","#0891b2","#4f46e5","#059669","#ea580c","#9333ea","#0284c7","#b91c1c","#15803d","#a16207"];
 let db=JSON.parse(localStorage.getItem('D24_DB'))||JSON.parse(localStorage.getItem('DAILY24_V463_DB'))||{};
 let masterTodos=JSON.parse(localStorage.getItem('D24_TODOS'))||JSON.parse(localStorage.getItem('DAILY24_MASTER_TODOS'))||[];
-let notices=JSON.parse(localStorage.getItem('D24_NOTICES'))||JSON.parse(localStorage.getItem('DAILY24_NOTICES'))||["","","","",""];
 let currentDate=new Date().toISOString().split('T')[0];
 let dragInfo=null,editIdx=null,autoSaveTimer=null;
 
@@ -531,13 +544,14 @@ let dragInfo=null,editIdx=null,autoSaveTimer=null;
 function flashAutoSave(){const el=document.getElementById('autosave-ind');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1200);}
 function triggerAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{saveDataSilent();flashAutoSave();},8000);}
 function saveDataSilent(){
-    collectTodos();collectNotices();
-    db[currentDate]={acts:db[currentDate]?.acts||[],diary:document.getElementById('diary-text').value};
+    collectTodos();collectNotices();collectGoals();
+    db[currentDate]=Object.assign(db[currentDate]||{},{acts:db[currentDate]?.acts||[],diary:document.getElementById('diary-text').value,notices:db[currentDate]?.notices||["","","","",""],goals:db[currentDate]?.goals||["","","","","","","","","",""]});
     localStorage.setItem('D24_DB',JSON.stringify(db));localStorage.setItem('D24_TODOS',JSON.stringify(masterTodos));
-    localStorage.setItem('D24_NOTICES',JSON.stringify(notices));saveToCloud();
+    saveToCloud();
 }
 function collectTodos(){masterTodos=Array.from(document.querySelectorAll('.todo-card')).map(c=>({done:c.querySelector('.t-check').checked,text:c.querySelector('.t-text').value,mins:c.querySelector('.t-time').value,color:c.querySelector('.todo-color-dot').style.backgroundColor,finished:c.classList.contains('is-finished')}));}
-function collectNotices(){notices=Array.from(document.querySelectorAll('.notice-input')).map(inp=>inp.value);}
+function collectNotices(){const inps=document.querySelectorAll('.notice-input');if(inps.length>0){if(!db[currentDate])db[currentDate]={acts:[],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};db[currentDate].notices=Array.from(inps).map(inp=>inp.value);}}
+function collectGoals(){const inps=document.querySelectorAll('.goal-input');if(inps.length>0){if(!db[currentDate])db[currentDate]={acts:[],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};db[currentDate].goals=Array.from(inps).map(inp=>inp.value);}}
 
 // ================================================================
 //  ログイン・初期化
@@ -549,7 +563,7 @@ function checkLogin(){
     }else showToast('⚠️ パスワードが違います',2000);
 }
 function init(){
-    renderTimelineGrid();renderPalette();renderNotices();
+    renderTimelineGrid();renderPalette();
     loadDate(currentDate);startCurrentTimeLine();renderSidebarCals();
     document.getElementById('diary-text').addEventListener('input',triggerAutoSave);
     initGoogleAuth();
@@ -595,7 +609,10 @@ function showTodoPopup(e,i){e.stopPropagation();closeTodoPopups();document.getEl
 function closeTodoPopups(){document.querySelectorAll('.todo-palette-popup').forEach(p=>p.style.display='none');}
 function setTodoColor(x,c){document.querySelectorAll('.todo-card')[x].querySelector('.todo-color-dot').style.backgroundColor=c;triggerAutoSave();}
 function toggleFinish(b){b.closest('.todo-card').classList.toggle('is-finished');triggerAutoSave();}
-function renderNotices(){const ui=document.getElementById('notices-ui');ui.innerHTML='';for(let i=0;i<5;i++){const r=document.createElement('div');r.className='notice-row';r.innerHTML='<span class="notice-num">'+(i+1)+'</span><input type="text" class="notice-input" value="'+(notices[i]||'').replace(/"/g,'&quot;')+'" placeholder="連絡事項を入力…" data-idx="'+i+'">';r.querySelector('input').addEventListener('input',triggerAutoSave);ui.appendChild(r);}}
+function renderNotices(){const ui=document.getElementById('notices-ui');ui.innerHTML='';const nts=(db[currentDate]&&db[currentDate].notices)||["","","","",""];for(let i=0;i<5;i++){const r=document.createElement('div');r.className='notice-row';r.innerHTML='<span class="notice-num">'+(i+1)+'</span><input type="text" class="notice-input" value="'+(nts[i]||'').replace(/"/g,'&quot;')+'" placeholder="連絡事項を入力…" data-idx="'+i+'"><button class="notice-copy-btn" onclick="copyNoticeToNextDay('+i+')">→明日</button>';r.querySelector('input').addEventListener('input',triggerAutoSave);ui.appendChild(r);}}
+function copyNoticeToNextDay(idx){collectNotices();const val=(db[currentDate].notices||[])[idx]||'';if(!val){showToast('⚠️ 内容が空です');return;}const d=new Date(currentDate);d.setDate(d.getDate()+1);const nxt=d.toISOString().split('T')[0];if(!db[nxt])db[nxt]={acts:[],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};if(!db[nxt].notices)db[nxt].notices=["","","","",""];db[nxt].notices[idx]=val;saveDataSilent();flashAutoSave();showToast('📋 Notice '+(idx+1)+'を翌日へ複写しました');}
+function renderGoals(){const ui=document.getElementById('goals-ui');ui.innerHTML='';const gls=(db[currentDate]&&db[currentDate].goals)||["","","","","","","","","",""];for(let i=0;i<10;i++){const r=document.createElement('div');r.className='goal-row';r.innerHTML='<span class="goal-num">'+(i+1)+'</span><input type="text" class="goal-input" value="'+(gls[i]||'').replace(/"/g,'&quot;')+'" placeholder="目標を入力…" data-idx="'+i+'">';r.querySelector('input').addEventListener('input',triggerAutoSave);ui.appendChild(r);}}
+function copyAllGoalsToNextDay(){collectGoals();const gls=db[currentDate]?.goals||[];if(gls.every(g=>!g)){showToast('⚠️ 目標が未入力です');return;}const d=new Date(currentDate);d.setDate(d.getDate()+1);const nxt=d.toISOString().split('T')[0];if(!db[nxt])db[nxt]={acts:[],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};db[nxt].goals=[...gls];saveDataSilent();flashAutoSave();showToast('📋 今月の目標を翌日へ複写しました');}
 
 // ================================================================
 //  タイムライン
@@ -614,7 +631,7 @@ function handleCellClick(h,m,cl){const acts=db[currentDate].acts||[];const cm=h*
 function startCurrentTimeLine(){updateCurrentTimeLine();setInterval(updateCurrentTimeLine,60000);}
 function updateCurrentTimeLine(){document.querySelectorAll('.current-time-line').forEach(el=>el.remove());document.querySelectorAll('.time-row.current-hour').forEach(r=>r.classList.remove('current-hour'));const now=new Date(),h=now.getHours(),m=now.getMinutes();const row=document.querySelector('.time-row[data-h="'+h+'"]');if(!row)return;row.classList.add('current-hour');const cs=row.querySelector('.minute-cells');if(!cs)return;const ln=document.createElement('div');ln.className='current-time-line';ln.style.left=(m/60*100)+'%';cs.appendChild(ln);}
 
-function loadDate(iso){currentDate=iso;document.getElementById('calendar-picker').value=iso;document.getElementById('current-day-badge').innerText=iso;renderDates(iso);renderTodos();renderSidebarCals();if(!db[iso]){db[iso]={acts:[{h:5,m:0,duration:90,name:'就寝中',color:'#0891b2'},{h:24,m:30,duration:30,name:'就寝中',color:'#0891b2'}],diary:''};}document.getElementById('diary-text').value=db[iso].diary||'';refreshTimeline();if(gcalAccessToken)fetchGoogleCalendar();}
+function loadDate(iso){currentDate=iso;document.getElementById('calendar-picker').value=iso;document.getElementById('current-day-badge').innerText=iso;renderDates(iso);renderTodos();renderSidebarCals();if(!db[iso]){db[iso]={acts:[{h:5,m:0,duration:90,name:'就寝中',color:'#0891b2'},{h:24,m:30,duration:30,name:'就寝中',color:'#0891b2'}],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};}if(!db[iso].notices)db[iso].notices=["","","","",""];if(!db[iso].goals)db[iso].goals=["","","","","","","","","",""];document.getElementById('diary-text').value=db[iso].diary||'';renderNotices();renderGoals();refreshTimeline();if(gcalAccessToken)fetchGoogleCalendar();}
 
 function refreshTimeline(){document.querySelectorAll('.act-block').forEach(b=>b.remove());const acts=db[currentDate].acts||[];const lanes=calculateLanes(acts);acts.forEach((a,idx)=>{const lane=lanes[idx];let rem=a.duration,curH=a.h,curM=a.m;while(rem>0&&curH<=24){const rc=document.querySelector('.time-row[data-h="'+curH+'"] .minute-cells');if(!rc)break;let dur=Math.min(rem,60-curM);const dv=document.createElement('div');dv.className='act-block';dv.draggable=true;dv.style.left=(curM/60*100)+'%';dv.style.width=(dur/60*100)+'%';dv.style.backgroundColor=a.color;dv.innerText=(curM===a.m)?a.name:'';if(lane===-1){dv.style.height='54px';dv.style.top='2px';}else if(lane===0){dv.style.height='27px';dv.style.top='1px';}else{dv.style.height='27px';dv.style.top='31px';}dv.onclick=e=>{e.stopPropagation();openEdit(idx);};dv.ondragstart=()=>{dragInfo={type:'move',index:idx,data:a};};rc.appendChild(dv);rem-=dur;curH++;curM=0;}});updateCurrentTimeLine();}
 
@@ -629,8 +646,8 @@ function openPreview(){const data=db[currentDate];if(!data)return;let h='<div st
 function closeModals(){document.querySelectorAll('.modal, .overlay').forEach(x=>x.style.display='none');}
 
 function rgb2hex(rgb){if(!rgb||!rgb.startsWith('rgb'))return rgb;const m=rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);if(!m)return rgb;return'#'+((1<<24)+(parseInt(m[1])<<16)+(parseInt(m[2])<<8)+parseInt(m[3])).toString(16).slice(1).toUpperCase();}
-function exportJSON(){const d={db,masterTodos,notices};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='daily24_'+currentDate+'.json';a.click();showToast('📤 エクスポート完了');}
-function importJSON(e){const r=new FileReader();r.onload=()=>{try{const imp=JSON.parse(r.result);if(imp.db){db=imp.db;masterTodos=imp.masterTodos||masterTodos;notices=imp.notices||notices;}else{db=imp;}localStorage.setItem('D24_DB',JSON.stringify(db));localStorage.setItem('D24_TODOS',JSON.stringify(masterTodos));localStorage.setItem('D24_NOTICES',JSON.stringify(notices));renderNotices();loadDate(currentDate);saveToCloud();showToast('📥 同期完了');}catch(err){showToast('⚠️ ファイル読込エラー',3000);}};r.readAsText(e.target.files[0]);}
+function exportJSON(){const d={db,masterTodos};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='daily24_'+currentDate+'.json';a.click();showToast('📤 エクスポート完了');}
+function importJSON(e){const r=new FileReader();r.onload=()=>{try{const imp=JSON.parse(r.result);if(imp.db){db=imp.db;masterTodos=imp.masterTodos||masterTodos;}else{db=imp;}localStorage.setItem('D24_DB',JSON.stringify(db));localStorage.setItem('D24_TODOS',JSON.stringify(masterTodos));loadDate(currentDate);saveToCloud();showToast('📥 同期完了');}catch(err){showToast('⚠️ ファイル読込エラー',3000);}};r.readAsText(e.target.files[0]);}
 window.addEventListener('resize',()=>renderDates(currentDate));
 window.addEventListener('beforeunload',()=>saveDataSilent());
 </script>
