@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>毎日日程表２４ v5.6</title>
+    <title>毎日日程表２４ v6.0</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -158,6 +158,9 @@
 
         .current-time-line{position:absolute;top:0;bottom:0;width:2px;background:var(--danger);z-index:50;box-shadow:0 0 6px rgba(239,68,68,.5)}
         .current-time-line::before{content:'';position:absolute;top:-4px;left:-4px;width:10px;height:10px;border-radius:50%;background:var(--danger)}
+        .cell.past-cell{background:rgba(148,163,184,0.12)}
+        .time-row.past-row .minute-cells{background:rgba(148,163,184,0.10)}
+        .time-row.past-row .hour-label{color:var(--text-muted);opacity:.7}
 
         .act-block{position:absolute;border-radius:5px;color:#fff;font-weight:700;font-size:11px;padding:2px 8px;overflow:hidden;white-space:nowrap;cursor:pointer;z-index:10;box-shadow:0 2px 6px rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.2);line-height:1.4}
         .act-block:hover{box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:15}
@@ -185,6 +188,36 @@
         .goal-row input:focus{border-color:var(--accent);outline:none}
 
         .overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:2500;backdrop-filter:blur(4px)}
+
+        /* Reminder settings in edit modal */
+        .reminder-section{margin-top:14px;padding:12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface-alt)}
+        .reminder-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;font-size:13px;color:var(--text)}
+        .reminder-toggle input{width:18px;height:18px;accent-color:var(--accent)}
+        .reminder-opts{margin-top:10px;display:none;flex-direction:column;gap:8px}
+        .reminder-opts.show{display:flex}
+        .reminder-opt-row{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text)}
+        .reminder-opt-row input[type="checkbox"]{width:16px;height:16px;accent-color:var(--accent)}
+        .reminder-opt-row input[type="number"]{width:55px;padding:4px 6px;border:1.5px solid var(--border);border-radius:5px;font-size:12px;font-family:var(--font-mono);text-align:center}
+        .reminder-opt-row select{padding:4px 6px;border:1.5px solid var(--border);border-radius:5px;font-size:12px;font-family:var(--font-body);background:var(--surface)}
+        .reminder-sound-row{display:flex;align-items:center;gap:8px;margin-top:4px}
+        .reminder-sound-row select{flex:1;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface)}
+        .sound-test-btn{padding:4px 10px;border:1px solid var(--border-strong);border-radius:5px;background:var(--surface);cursor:pointer;font-size:11px;font-weight:700}
+        .sound-test-btn:hover{background:var(--accent-light);border-color:var(--accent)}
+
+        /* Alarm Popup */
+        .alarm-popup-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.7);z-index:10000;backdrop-filter:blur(6px);justify-content:center;align-items:center}
+        .alarm-popup-overlay.show{display:flex}
+        .alarm-popup{background:var(--surface);border-radius:20px;padding:44px;box-shadow:0 24px 80px rgba(0,0,0,.35);width:min(650px,90vw);text-align:center;animation:alarmBounce .4s ease-out}
+        @keyframes alarmBounce{0%{opacity:0;transform:scale(.8)}60%{transform:scale(1.03)}100%{opacity:1;transform:scale(1)}}
+        .alarm-popup-icon{font-size:64px;margin-bottom:12px}
+        .alarm-popup-title{font-size:28px;font-weight:900;color:var(--accent);margin-bottom:16px}
+        .alarm-popup-title.warn{color:var(--warning)}
+        .alarm-popup-title.danger{color:var(--danger)}
+        .alarm-popup-body{font-size:22px;font-weight:700;color:var(--text);margin-bottom:10px}
+        .alarm-popup-time{font-size:36px;font-weight:900;font-family:var(--font-mono);color:var(--text);margin-bottom:20px}
+        .alarm-popup-sub{font-size:16px;color:var(--text-muted);margin-bottom:24px}
+        .alarm-ok-btn{padding:16px 64px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:20px;font-weight:800;cursor:pointer;transition:var(--transition);box-shadow:0 4px 12px rgba(37,99,235,.4)}
+        .alarm-ok-btn:hover{background:var(--accent-hover);transform:translateY(-1px)}
         .modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border-radius:var(--radius-lg);padding:24px;z-index:3000;box-shadow:var(--shadow-xl);width:380px;max-width:95vw;animation:modalIn .25s ease-out}
         @keyframes modalIn{from{opacity:0;transform:translate(-50%,-50%) scale(.95)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
         .modal h3{font-size:16px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px}
@@ -211,7 +244,7 @@
 <body onclick="closeTodoPopups()">
 <div id="login-overlay"><div class="login-box">
     <div class="login-title">📅 DAILY SCHEDULE 24</div>
-    <div class="login-subtitle">v5.6 — Google Calendar & Firebase 連携</div>
+    <div class="login-subtitle">v6.0 — 24時対応完全版</div>
     <div class="login-field">
         <input type="password" id="pw-input" placeholder="パスワード" onkeydown="if(event.key==='Enter')checkLogin()">
         <button onclick="checkLogin()">ログイン</button>
@@ -286,16 +319,73 @@
 </div>
 
 <div class="overlay" id="modal-overlay" onclick="closeModals()"></div>
-<div class="modal" id="edit-modal">
+<div class="modal" id="edit-modal" style="max-height:90vh;overflow-y:auto">
     <h3>✏️ 予定の編集</h3>
     <label>内容</label><input type="text" id="edit-name">
     <label>所要時間（分）</label><input type="number" id="edit-duration" step="5" min="5">
     <label>カラー</label><div class="palette" id="edit-palette"></div><input type="hidden" id="edit-color-val">
+    <!-- Reminder Section -->
+    <div class="reminder-section">
+        <label class="reminder-toggle"><input type="checkbox" id="rem-enabled" onchange="toggleReminderOpts()"> 🔔 リマインダーアラーム</label>
+        <div class="reminder-opts" id="rem-opts">
+            <div class="reminder-sound-row">
+                <span style="font-size:11px;font-weight:700;color:var(--text-muted)">アラーム音:</span>
+                <select id="rem-sound">
+                    <option value="alarm1">🔔 目覚まし音</option>
+                    <option value="alarm2">🎵 チャイム</option>
+                    <option value="alarm3">📳 バイブ通知</option>
+                    <option value="heal1">🌊 波の音</option>
+                    <option value="heal2">🎹 オルゴール</option>
+                    <option value="heal3">🍃 風鈴</option>
+                    <option value="bell1">🔊 教会の鐘</option>
+                    <option value="bell2">🎶 マリンバ</option>
+                    <option value="bell3">✨ クリスタル</option>
+                    <option value="gen1">🎺 ファンファーレ</option>
+                    <option value="gen2">🛎 デスクベル</option>
+                    <option value="gen3">🎼 ハープ</option>
+                </select>
+                <button class="sound-test-btn" onclick="testAlarmSound()">▶ 試聴</button>
+            </div>
+            <div class="reminder-opt-row">
+                <input type="checkbox" id="rem-pre-enabled" checked onchange="togglePreInput()">
+                <span>① 開始前通知:</span>
+                <input type="number" id="rem-pre-min" value="5" min="1" max="120" style="width:55px"> 分前
+            </div>
+            <div class="reminder-opt-row" style="opacity:.6">
+                <input type="checkbox" checked disabled>
+                <span>② 開始時に通知</span><span style="font-size:10px;color:var(--text-muted)">(常にON)</span>
+            </div>
+            <div class="reminder-opt-row">
+                <input type="checkbox" id="rem-half-enabled">
+                <span>③-A 残り半分で通知</span>
+            </div>
+            <div class="reminder-opt-row">
+                <input type="checkbox" id="rem-five-enabled">
+                <span>③-B 残り5分で通知</span>
+            </div>
+            <div class="reminder-opt-row">
+                <input type="checkbox" id="rem-end-enabled">
+                <span>④ 終了時に通知</span>
+            </div>
+        </div>
+    </div>
     <div class="modal-actions">
         <button class="btn btn-primary" onclick="updateActivity()">✅ 更新保存</button>
         <button class="btn" onclick="copyToNextDay()">📋 翌日へ複写</button>
         <button class="btn btn-danger" onclick="deleteActivity()">🗑 削除</button>
         <button class="btn" onclick="closeModals()">閉じる</button>
+    </div>
+</div>
+
+<!-- Alarm Popup -->
+<div class="alarm-popup-overlay" id="alarm-overlay">
+    <div class="alarm-popup">
+        <div class="alarm-popup-icon" id="alarm-icon">🔔</div>
+        <div class="alarm-popup-title" id="alarm-title">リマインダーアラーム</div>
+        <div class="alarm-popup-time" id="alarm-time"></div>
+        <div class="alarm-popup-body" id="alarm-body"></div>
+        <div class="alarm-popup-sub" id="alarm-sub"></div>
+        <button class="alarm-ok-btn" onclick="dismissAlarm()">OK</button>
     </div>
 </div>
 <div class="modal" id="preview-modal" style="width:90%;max-width:700px;max-height:85vh;overflow-y:auto">
@@ -566,7 +656,7 @@ function init(){
     renderTimelineGrid();renderPalette();
     loadDate(currentDate);startCurrentTimeLine();renderSidebarCals();
     document.getElementById('diary-text').addEventListener('input',triggerAutoSave);
-    initGoogleAuth();
+    initGoogleAuth();startAlarmChecker();
 }
 function showToast(msg,dur=1800){const ex=document.querySelector('.toast');if(ex)ex.remove();const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>{t.classList.add('fade-out');setTimeout(()=>t.remove(),300);},dur);}
 
@@ -628,18 +718,60 @@ function calculateLanes(acts){const lanes=new Array(acts.length).fill(-1);for(le
 
 function handleCellClick(h,m,cl){const acts=db[currentDate].acts||[];const cm=h*60+m;const ex=acts.filter(a=>{const r=getBlockRange(a);return r.start<=cm&&cm<r.end;});if(ex.length===0){if(!canAddBlock(h,m,15,-1)){showToast('⚠️ 重複上限');return;}db[currentDate].acts.push({h,m,duration:15,name:'新規予定',color:COLORS[3]});saveDataSilent();refreshTimeline();flashAutoSave();showToast('✅ 新規予定を追加');}else if(ex.length===1&&cl===1){if(!canAddBlock(h,m,15,-1)){showToast('⚠️ 重複上限');return;}db[currentDate].acts.push({h,m,duration:15,name:'新規予定',color:COLORS[4]});saveDataSilent();refreshTimeline();flashAutoSave();showToast('✅ ダブルワーク追加');}else if(ex.length===1&&cl===0){const idx=acts.indexOf(ex[0]);if(idx>=0)openEdit(idx);}else if(ex.length>=2){showToast('⚠️ 3つ以上は入れられません',3000);}}
 
-function startCurrentTimeLine(){updateCurrentTimeLine();setInterval(updateCurrentTimeLine,60000);}
-function updateCurrentTimeLine(){document.querySelectorAll('.current-time-line').forEach(el=>el.remove());document.querySelectorAll('.time-row.current-hour').forEach(r=>r.classList.remove('current-hour'));const now=new Date(),h=now.getHours(),m=now.getMinutes();const row=document.querySelector('.time-row[data-h="'+h+'"]');if(!row)return;row.classList.add('current-hour');const cs=row.querySelector('.minute-cells');if(!cs)return;const ln=document.createElement('div');ln.className='current-time-line';ln.style.left=(m/60*100)+'%';cs.appendChild(ln);}
+function startCurrentTimeLine(){updateCurrentTimeLine();setInterval(updateCurrentTimeLine,5000);}
+
+// 24時台判定: 実時刻が0:00〜0:59で、表示中の日付が「昨日」なら24時台として扱う
+function getEffectiveTime(){
+    const now=new Date();
+    let h=now.getHours(),m=now.getMinutes(),s=now.getSeconds();
+    const todayISO=now.toISOString().split('T')[0];
+    if(h===0&&currentDate!==todayISO){
+        // 0時台だが表示日が今日ではない → 昨日の24時台として扱うか確認
+        const yesterday=new Date(now);yesterday.setDate(yesterday.getDate()-1);
+        const yISO=yesterday.toISOString().split('T')[0];
+        if(currentDate===yISO){h=24;}// 昨日の24時台
+    }
+    return {h,m,s,nowSec:h*3600+m*60+s,isOnCurrentDate:(todayISO===currentDate||(h===24))};
+}
+
+function updateCurrentTimeLine(){
+    document.querySelectorAll('.current-time-line').forEach(el=>el.remove());
+    document.querySelectorAll('.time-row.current-hour').forEach(r=>r.classList.remove('current-hour'));
+    document.querySelectorAll('.cell.past-cell').forEach(c=>c.classList.remove('past-cell'));
+    document.querySelectorAll('.time-row.past-row').forEach(r=>r.classList.remove('past-row'));
+    const t=getEffectiveTime();
+    if(!t.isOnCurrentDate)return;// 表示中の日付と無関係なら何もしない
+    const h=t.h,m=t.m,s=t.s;
+    // 赤ピン配置
+    const row=document.querySelector('.time-row[data-h="'+h+'"]');
+    if(row){row.classList.add('current-hour');const cs=row.querySelector('.minute-cells');if(cs){const ln=document.createElement('div');ln.className='current-time-line';ln.style.left=((m*60+s)/3600*100)+'%';cs.appendChild(ln);
+        cs.querySelectorAll('.cell').forEach(c=>{const cm=parseInt(c.dataset.m);if(cm+5<=m)c.classList.add('past-cell');});
+    }}
+    // 過去の行全体をグレーアウト
+    document.querySelectorAll('.time-row[data-h]').forEach(r=>{const rh=parseInt(r.dataset.h);if(rh<h)r.classList.add('past-row');});
+}
 
 function loadDate(iso){currentDate=iso;document.getElementById('calendar-picker').value=iso;document.getElementById('current-day-badge').innerText=iso;renderDates(iso);renderTodos();renderSidebarCals();if(!db[iso]){db[iso]={acts:[{h:5,m:0,duration:90,name:'就寝中',color:'#0891b2'},{h:24,m:30,duration:30,name:'就寝中',color:'#0891b2'}],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};}if(!db[iso].notices)db[iso].notices=["","","","",""];if(!db[iso].goals)db[iso].goals=["","","","","","","","","",""];document.getElementById('diary-text').value=db[iso].diary||'';renderNotices();renderGoals();refreshTimeline();if(gcalAccessToken)fetchGoogleCalendar();}
 
-function refreshTimeline(){document.querySelectorAll('.act-block').forEach(b=>b.remove());const acts=db[currentDate].acts||[];const lanes=calculateLanes(acts);acts.forEach((a,idx)=>{const lane=lanes[idx];let rem=a.duration,curH=a.h,curM=a.m;while(rem>0&&curH<=24){const rc=document.querySelector('.time-row[data-h="'+curH+'"] .minute-cells');if(!rc)break;let dur=Math.min(rem,60-curM);const dv=document.createElement('div');dv.className='act-block';dv.draggable=true;dv.style.left=(curM/60*100)+'%';dv.style.width=(dur/60*100)+'%';dv.style.backgroundColor=a.color;dv.innerText=(curM===a.m)?a.name:'';if(lane===-1){dv.style.height='54px';dv.style.top='2px';}else if(lane===0){dv.style.height='27px';dv.style.top='1px';}else{dv.style.height='27px';dv.style.top='31px';}dv.onclick=e=>{e.stopPropagation();openEdit(idx);};dv.ondragstart=()=>{dragInfo={type:'move',index:idx,data:a};};rc.appendChild(dv);rem-=dur;curH++;curM=0;}});updateCurrentTimeLine();}
+function refreshTimeline(){document.querySelectorAll('.act-block').forEach(b=>b.remove());const acts=db[currentDate].acts||[];const lanes=calculateLanes(acts);acts.forEach((a,idx)=>{const lane=lanes[idx];let rem=a.duration,curH=a.h,curM=a.m;while(rem>0&&curH<=24){const rc=document.querySelector('.time-row[data-h="'+curH+'"] .minute-cells');if(!rc)break;let dur=Math.min(rem,60-curM);const dv=document.createElement('div');dv.className='act-block';dv.draggable=true;dv.style.left=(curM/60*100)+'%';dv.style.width=(dur/60*100)+'%';dv.style.backgroundColor=a.color;dv.innerText=(curM===a.m)?(a.reminder&&a.reminder.enabled?'🔔 ':'')+a.name:'';if(lane===-1){dv.style.height='54px';dv.style.top='2px';}else if(lane===0){dv.style.height='27px';dv.style.top='1px';}else{dv.style.height='27px';dv.style.top='31px';}dv.onclick=e=>{e.stopPropagation();openEdit(idx);};dv.ondragstart=()=>{dragInfo={type:'move',index:idx,data:a};};rc.appendChild(dv);rem-=dur;curH++;curM=0;}});updateCurrentTimeLine();}
 
 function handleDrop(h,m,ln){if(!dragInfo)return;const dur=dragInfo.type==='move'?dragInfo.data.duration:dragInfo.mins;const nm=dragInfo.type==='move'?dragInfo.data.name:dragInfo.name;const cl=dragInfo.type==='move'?dragInfo.data.color:dragInfo.color;const ex=dragInfo.type==='move'?dragInfo.index:-1;if(!canAddBlock(h,m,dur,ex)){showToast('⚠️ 配置不可');dragInfo=null;return;}if(dragInfo.type==='move')db[currentDate].acts.splice(dragInfo.index,1);db[currentDate].acts.push({h,m,duration:dur,name:nm,color:cl});saveDataSilent();refreshTimeline();flashAutoSave();dragInfo=null;}
 function saveData(show){saveDataSilent();if(show)showToast('💾 保存しました');}
 
-function openEdit(idx){editIdx=idx;const a=db[currentDate].acts[idx];document.getElementById('edit-name').value=a.name;document.getElementById('edit-duration').value=a.duration;document.getElementById('edit-color-val').value=a.color;document.getElementById('modal-overlay').style.display='block';document.getElementById('edit-modal').style.display='block';document.getElementById('edit-palette').querySelectorAll('.color-dot-choice').forEach(d=>{d.classList.toggle('selected',rgb2hex(d.style.backgroundColor).toUpperCase()===a.color.toUpperCase());});}
-function updateActivity(){const a=db[currentDate].acts[editIdx];const nd=parseInt(document.getElementById('edit-duration').value);if(nd!==a.duration&&!canAddBlock(a.h,a.m,nd,editIdx)){showToast('⚠️ 重複が発生します');return;}a.name=document.getElementById('edit-name').value;a.duration=nd;a.color=document.getElementById('edit-color-val').value;saveDataSilent();loadDate(currentDate);closeModals();flashAutoSave();showToast('✅ 更新しました');}
+function openEdit(idx){editIdx=idx;const a=db[currentDate].acts[idx];document.getElementById('edit-name').value=a.name;document.getElementById('edit-duration').value=a.duration;document.getElementById('edit-color-val').value=a.color;document.getElementById('modal-overlay').style.display='block';document.getElementById('edit-modal').style.display='block';document.getElementById('edit-palette').querySelectorAll('.color-dot-choice').forEach(d=>{d.classList.toggle('selected',rgb2hex(d.style.backgroundColor).toUpperCase()===a.color.toUpperCase());});
+// Load reminder settings
+const rm=a.reminder||{};document.getElementById('rem-enabled').checked=!!rm.enabled;document.getElementById('rem-sound').value=rm.sound||'alarm1';document.getElementById('rem-pre-enabled').checked=rm.preEnabled!==false;document.getElementById('rem-pre-min').value=rm.preBefore||5;document.getElementById('rem-half-enabled').checked=!!rm.halfEnabled;document.getElementById('rem-five-enabled').checked=!!rm.fiveEnabled;document.getElementById('rem-end-enabled').checked=!!rm.endEnabled;toggleReminderOpts();togglePreInput();}
+function updateActivity(){const a=db[currentDate].acts[editIdx];const nd=parseInt(document.getElementById('edit-duration').value);if(nd!==a.duration&&!canAddBlock(a.h,a.m,nd,editIdx)){showToast('⚠️ 重複が発生します');return;}a.name=document.getElementById('edit-name').value;a.duration=nd;a.color=document.getElementById('edit-color-val').value;
+// Save reminder
+const remEnabled=document.getElementById('rem-enabled').checked;
+if(remEnabled){
+    const t=getEffectiveTime();
+    const actStartMin=a.h*60+a.m;
+    const nowMin=t.h*60+t.m;
+    if(t.isOnCurrentDate&&actStartMin<=nowMin){showToast('⚠️ 既に過ぎた時刻にはリマインダーを設定できません',3000);return;}
+    a.reminder={enabled:true,sound:document.getElementById('rem-sound').value,preEnabled:document.getElementById('rem-pre-enabled').checked,preBefore:parseInt(document.getElementById('rem-pre-min').value)||5,halfEnabled:document.getElementById('rem-half-enabled').checked,fiveEnabled:document.getElementById('rem-five-enabled').checked,endEnabled:document.getElementById('rem-end-enabled').checked,firedPre:false,firedStart:false,firedHalf:false,firedFive:false,firedEnd:false};
+}else{a.reminder={enabled:false};}
+saveDataSilent();loadDate(currentDate);closeModals();flashAutoSave();showToast('✅ 更新しました');}
 function deleteActivity(){db[currentDate].acts.splice(editIdx,1);saveDataSilent();refreshTimeline();closeModals();flashAutoSave();showToast('🗑 削除しました');}
 function copyToNextDay(){const a={...db[currentDate].acts[editIdx]};const d=new Date(currentDate);d.setDate(d.getDate()+1);const nxt=d.toISOString().split('T')[0];if(!db[nxt])db[nxt]={acts:[],diary:''};db[nxt].acts.push(a);saveDataSilent();flashAutoSave();showToast('📋 翌日へ複写しました');}
 function openPreview(){const data=db[currentDate];if(!data)return;let h='<div style="font-weight:800;font-size:16px;margin-bottom:12px;color:var(--accent)">【'+currentDate+'】</div><table style="width:100%;border-collapse:collapse;font-size:13px">';[...data.acts].sort((a,b)=>(a.h*60+a.m)-(b.h*60+b.m)).forEach(a=>{h+='<tr><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-weight:600;width:70px">'+a.h+':'+String(a.m).padStart(2,'0')+'</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);border-left:4px solid '+a.color+';font-weight:600">'+a.name+' <span style="color:var(--text-muted);font-size:11px">('+a.duration+'分)</span></td></tr>';});h+='</table>';if(data.diary)h+='<div style="margin-top:16px;padding-top:12px;border-top:1.5px solid var(--border)"><div style="font-weight:700;font-size:12px;color:var(--text-muted);margin-bottom:6px">📝 DIARY</div><div style="font-size:13px;line-height:1.8">'+data.diary.replace(/\n/g,'<br>')+'</div></div>';document.getElementById('preview-content').innerHTML=h;document.getElementById('modal-overlay').style.display='block';document.getElementById('preview-modal').style.display='block';}
@@ -650,6 +782,193 @@ function exportJSON(){const d={db,masterTodos};const b=new Blob([JSON.stringify(
 function importJSON(e){const r=new FileReader();r.onload=()=>{try{const imp=JSON.parse(r.result);if(imp.db){db=imp.db;masterTodos=imp.masterTodos||masterTodos;}else{db=imp;}localStorage.setItem('D24_DB',JSON.stringify(db));localStorage.setItem('D24_TODOS',JSON.stringify(masterTodos));loadDate(currentDate);saveToCloud();showToast('📥 同期完了');}catch(err){showToast('⚠️ ファイル読込エラー',3000);}};r.readAsText(e.target.files[0]);}
 window.addEventListener('resize',()=>renderDates(currentDate));
 window.addEventListener('beforeunload',()=>saveDataSilent());
+
+// ================================================================
+//  リマインダーアラーム機能
+// ================================================================
+let alarmAutoCloseTimer=null;
+let currentAlarmAudioStop=null;
+
+function toggleReminderOpts(){
+    const on=document.getElementById('rem-enabled').checked;
+    document.getElementById('rem-opts').classList.toggle('show',on);
+}
+function togglePreInput(){
+    const on=document.getElementById('rem-pre-enabled').checked;
+    document.getElementById('rem-pre-min').disabled=!on;
+    document.getElementById('rem-pre-min').style.opacity=on?'1':'0.4';
+}
+
+// Web Audio API — 3種類のアラーム音生成
+let audioCtx=null;
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+
+function playAlarmSound(type){
+    const ctx=getAudioCtx();
+    let playing=true;
+    if(type==='alarm1'){
+        const beep=()=>{if(!playing)return;const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=880;o.type='square';g.gain.value=0.15;o.start();o.stop(ctx.currentTime+0.15);setTimeout(()=>{if(playing)beep();},350);};
+        beep();
+    }else if(type==='alarm2'){
+        const chime=()=>{if(!playing)return;[523,659,784].forEach((f,i)=>{const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=f;o.type='sine';g.gain.value=0.12;o.start(ctx.currentTime+i*0.12);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+i*0.12+0.8);o.stop(ctx.currentTime+i*0.12+0.8);});setTimeout(()=>{if(playing)chime();},1500);};
+        chime();
+    }else if(type==='alarm3'){
+        const pulse=()=>{if(!playing)return;const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=220;o.type='triangle';g.gain.value=0.2;o.start();g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.2);o.stop(ctx.currentTime+0.2);setTimeout(()=>{if(!playing)return;const o2=ctx.createOscillator();const g2=ctx.createGain();o2.connect(g2);g2.connect(ctx.destination);o2.frequency.value=220;o2.type='triangle';g2.gain.value=0.2;o2.start();g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.2);o2.stop(ctx.currentTime+0.2);},250);setTimeout(()=>{if(playing)pulse();},1200);};
+        pulse();
+    }else if(type==='heal1'){
+        // 波の音: ホワイトノイズ+LFO
+        const bufSize=ctx.sampleRate*2;const buf=ctx.createBuffer(1,bufSize,ctx.sampleRate);const d=buf.getChannelData(0);for(let i=0;i<bufSize;i++)d[i]=(Math.random()*2-1)*0.3;
+        const loop=()=>{if(!playing)return;const src=ctx.createBufferSource();src.buffer=buf;const g=ctx.createGain();const lfo=ctx.createOscillator();const lfoG=ctx.createGain();lfo.frequency.value=0.25;lfo.connect(lfoG);lfoG.gain.value=0.06;lfoG.connect(g.gain);src.connect(g);g.connect(ctx.destination);g.gain.value=0.08;src.start();src.stop(ctx.currentTime+4);setTimeout(()=>{if(playing)loop();},3800);};
+        loop();
+    }else if(type==='heal2'){
+        // オルゴール: 高音メロディ
+        const notes=[784,880,1047,880,784,659,784,1047];let ni=0;
+        const play=()=>{if(!playing)return;const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=notes[ni%notes.length];o.type='sine';g.gain.value=0.1;o.start();g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.6);o.stop(ctx.currentTime+0.6);ni++;setTimeout(()=>{if(playing)play();},500);};
+        play();
+    }else if(type==='heal3'){
+        // 風鈴: ランダム高音+残響
+        const freqs=[1319,1568,1760,2093,2349];
+        const ring=()=>{if(!playing)return;const f=freqs[Math.floor(Math.random()*freqs.length)];const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=f;o.type='sine';g.gain.value=0.08;o.start();g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+1.8);o.stop(ctx.currentTime+1.8);setTimeout(()=>{if(playing)ring();},800+Math.random()*1200);};
+        ring();
+    }else if(type==='bell1'){
+        // 教会の鐘: 低音の重厚な響き
+        const toll=()=>{if(!playing)return;[174,220,262].forEach((f,i)=>{const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=f;o.type='sine';g.gain.value=0.1;o.start(ctx.currentTime+i*0.05);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+2.5);o.stop(ctx.currentTime+2.5);});setTimeout(()=>{if(playing)toll();},3000);};
+        toll();
+    }else if(type==='bell2'){
+        // マリンバ: 木琴風のリズミカルな音
+        const notes=[392,440,494,523,587,523,494,440];let ni=0;
+        const hit=()=>{if(!playing)return;const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=notes[ni%notes.length];o.type='triangle';g.gain.value=0.15;o.start();g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);o.stop(ctx.currentTime+0.35);ni++;setTimeout(()=>{if(playing)hit();},400);};
+        hit();
+    }else if(type==='bell3'){
+        // クリスタル: きらめくハイトーン
+        const sparkle=()=>{if(!playing)return;const f=2000+Math.random()*2000;const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=f;o.type='sine';g.gain.value=0.06;o.start();g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8);o.stop(ctx.currentTime+0.8);setTimeout(()=>{if(playing)sparkle();},300+Math.random()*400);};
+        sparkle();
+    }else if(type==='gen1'){
+        // ファンファーレ: 上昇音階の金管風
+        const notes=[262,330,392,523,659,784];let ni=0;
+        const fanfare=()=>{if(!playing)return;if(ni<notes.length){const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=notes[ni];o.type='sawtooth';g.gain.value=0.08;o.start();g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.4);o.stop(ctx.currentTime+0.4);ni++;setTimeout(()=>{if(playing)fanfare();},200);}else{ni=0;setTimeout(()=>{if(playing)fanfare();},1500);}};
+        fanfare();
+    }else if(type==='gen2'){
+        // デスクベル: カン！という短い金属音の繰り返し
+        const ding=()=>{if(!playing)return;const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=1200;o.type='sine';g.gain.value=0.18;o.start();g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.5);o.stop(ctx.currentTime+0.5);const o2=ctx.createOscillator();const g2=ctx.createGain();o2.connect(g2);g2.connect(ctx.destination);o2.frequency.value=3600;o2.type='sine';g2.gain.value=0.04;o2.start();g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);o2.stop(ctx.currentTime+0.15);setTimeout(()=>{if(playing)ding();},2000);};
+        ding();
+    }else if(type==='gen3'){
+        // ハープ: アルペジオの優雅な音色
+        const harpNotes=[262,330,392,494,587,659,784,880];let hi=0;
+        const strum=()=>{if(!playing)return;hi=0;const playNote=()=>{if(!playing||hi>=harpNotes.length)return;const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=harpNotes[hi];o.type='sine';g.gain.value=0.09;o.start();g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+1.5);o.stop(ctx.currentTime+1.5);hi++;setTimeout(()=>playNote(),120);};playNote();setTimeout(()=>{if(playing)strum();},3000);};
+        strum();
+    }
+    return ()=>{playing=false;};
+}
+
+function testAlarmSound(){
+    const type=document.getElementById('rem-sound').value;
+    const stop=playAlarmSound(type);
+    setTimeout(()=>{if(stop)stop();},2500);
+    showToast('🔊 試聴中…',2000);
+}
+
+// アラーム表示
+function showAlarmPopup(title,timeStr,bodyText,subText,icon,titleClass,soundType){
+    if(currentAlarmAudioStop){currentAlarmAudioStop();currentAlarmAudioStop=null;}
+    clearTimeout(alarmAutoCloseTimer);
+    document.getElementById('alarm-icon').textContent=icon||'🔔';
+    const titleEl=document.getElementById('alarm-title');titleEl.textContent=title;titleEl.className='alarm-popup-title'+(titleClass?' '+titleClass:'');
+    document.getElementById('alarm-time').textContent=timeStr;
+    document.getElementById('alarm-body').textContent=bodyText;
+    document.getElementById('alarm-sub').textContent=subText;
+    document.getElementById('alarm-overlay').classList.add('show');
+    currentAlarmAudioStop=playAlarmSound(soundType||'alarm1');
+    alarmAutoCloseTimer=setTimeout(dismissAlarm,60000);
+}
+
+function dismissAlarm(){
+    document.getElementById('alarm-overlay').classList.remove('show');
+    if(currentAlarmAudioStop){currentAlarmAudioStop();currentAlarmAudioStop=null;}
+    clearTimeout(alarmAutoCloseTimer);
+}
+
+// アラームチェッカー（3秒ごと — ラグ最小化）
+function startAlarmChecker(){setInterval(checkAlarms,3000);}
+
+function checkAlarms(){
+    const t=getEffectiveTime();
+    if(!t.isOnCurrentDate)return;
+    const data=db[currentDate];if(!data||!data.acts)return;
+    const nowSec=t.nowSec;
+
+    data.acts.forEach(a=>{
+        if(!a.reminder||!a.reminder.enabled)return;
+        const rm=a.reminder;
+        const startSec=(a.h*60+a.m)*60;
+        const endSec=startSec+a.duration*60;
+        const halfSec=startSec+Math.floor(a.duration*60/2);
+        const fiveBeforeEndSec=endSec-300;
+        const timeStr=a.h+':'+String(a.m).padStart(2,'0');
+        const bodyStr='予定「'+a.name+'」';
+
+        // 重複判定: 残り半分と残り5分が同タイミング（差10秒以内）かチェック
+        const halfFiveOverlap=rm.halfEnabled&&rm.fiveEnabled&&Math.abs(halfSec-fiveBeforeEndSec)<10;
+
+        // ① 開始前通知
+        if(rm.preEnabled&&!rm.firedPre){
+            const preSec=startSec-rm.preBefore*60;
+            if(nowSec>=preSec&&nowSec<startSec){
+                rm.firedPre=true;
+                showAlarmPopup('⏰ 開始前通知',timeStr+' 開始',bodyStr,'あと'+rm.preBefore+'分で開始します','⏰','warn',rm.sound);
+                saveDataSilent();
+            }
+        }
+        // ② 開始時通知
+        if(!rm.firedStart&&nowSec>=startSec&&nowSec<startSec+10){
+            rm.firedStart=true;
+            showAlarmPopup('🔔 リマインダーアラーム',timeStr+' 開始',bodyStr,'予定の時刻になりました','🔔','',rm.sound);
+            saveDataSilent();
+        }
+        // ③-A 残り半分 & ③-B 残り5分（重複統合処理）
+        if(halfFiveOverlap){
+            // 重複: 1回にまとめる
+            if(!rm.firedHalf&&!rm.firedFive&&a.duration>=6){
+                if(nowSec>=halfSec&&nowSec<halfSec+10){
+                    rm.firedHalf=true;rm.firedFive=true;
+                    const remLeftSec=endSec-nowSec;const remMin=Math.floor(remLeftSec/60);const remS=remLeftSec%60;
+                    const remStr=remS>0?remMin+'分'+remS+'秒':remMin+'分';
+                    showAlarmPopup('⏳ 残り5分（折り返し地点）',timeStr+' の予定',bodyStr,'残り'+remStr+'です','⏳','warn',rm.sound);
+                    saveDataSilent();
+                }
+            }
+        }else{
+            // ③-A 残り半分（単独）
+            if(rm.halfEnabled&&!rm.firedHalf&&a.duration>=6){
+                if(nowSec>=halfSec&&nowSec<halfSec+10){
+                    rm.firedHalf=true;
+                    const remLeftSec=endSec-nowSec;const remMin=Math.floor(remLeftSec/60);const remS=remLeftSec%60;
+                    const remStr=remS>0?remMin+'分'+remS+'秒':remMin+'分';
+                    showAlarmPopup('⏳ 残り半分',timeStr+' の予定',bodyStr,'残り'+remStr+'です','⏳','warn',rm.sound);
+                    saveDataSilent();
+                }
+            }
+            // ③-B 残り5分（単独）
+            if(rm.fiveEnabled&&!rm.firedFive&&a.duration>5){
+                if(nowSec>=fiveBeforeEndSec&&nowSec<fiveBeforeEndSec+10){
+                    rm.firedFive=true;
+                    showAlarmPopup('🚨 残り5分',timeStr+' の予定',bodyStr,'残り5分です！','🚨','danger',rm.sound);
+                    saveDataSilent();
+                }
+            }
+        }
+        // ④ 終了時通知
+        if(rm.endEnabled&&!rm.firedEnd){
+            if(nowSec>=endSec&&nowSec<endSec+10){
+                rm.firedEnd=true;
+                const endH=Math.floor(endSec/3600);const endM=Math.floor((endSec%3600)/60);
+                const endStr=endH+':'+String(endM).padStart(2,'0');
+                showAlarmPopup('🎉 お疲れさまでした！',endStr+' 終了',bodyStr,'予定の時間が終了しました','🎉','',rm.sound);
+                saveDataSilent();
+            }
+        }
+    });
+}
 </script>
 </body>
 </html>
