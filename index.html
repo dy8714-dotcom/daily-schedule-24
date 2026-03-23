@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>毎日日程表２４ v6.1</title>
+    <title>毎日日程表２４ v6.2</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -158,9 +158,9 @@
 
         .current-time-line{position:absolute;top:0;bottom:0;width:2px;background:var(--danger);z-index:50;box-shadow:0 0 6px rgba(239,68,68,.5)}
         .current-time-line::before{content:'';position:absolute;top:-4px;left:-4px;width:10px;height:10px;border-radius:50%;background:var(--danger)}
-        .cell.past-cell{background:rgba(148,163,184,0.12)}
-        .time-row.past-row .minute-cells{background:rgba(148,163,184,0.10)}
-        .time-row.past-row .hour-label{color:var(--text-muted);opacity:.7}
+        .cell.past-cell{background:rgba(100,116,139,0.22)}
+        .time-row.past-row .minute-cells{background:rgba(100,116,139,0.18)}
+        .time-row.past-row .hour-label{color:var(--text-muted);opacity:.55}
 
         /* View Tabs */
         .view-tabs{display:flex;gap:4px;margin-bottom:10px}
@@ -262,8 +262,8 @@
 
         @media(max-width:1100px){.sidebar{width:280px}}
         @media(max-width:900px){.app-shell{flex-direction:column}.sidebar{width:100%;position:static;order:10}}
-        @media(max-width:768px){.date-tabs{grid-template-columns:repeat(5,1fr)}.date-btn-extra{display:none}.todo-section{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.time-row{height:52px;grid-template-columns:44px 1fr}.minute-header-row{grid-template-columns:44px 1fr;height:20px}.modal{width:95vw}.template-grid{grid-template-columns:repeat(3,1fr)}.weekly-grid{min-width:500px}}
-        @media(max-width:480px){.app-title{font-size:13px}.date-tabs{grid-template-columns:repeat(5,1fr);gap:3px}.todo-section{grid-template-columns:1fr}.btn-label{display:none}}
+        @media(max-width:768px){.date-tabs{grid-template-columns:repeat(5,1fr)}.date-btn-extra{display:none}.bottom-grid{grid-template-columns:1fr}.time-row{height:52px;grid-template-columns:44px 1fr}.minute-header-row{grid-template-columns:44px 1fr;height:20px}.modal{width:95vw}.template-grid{grid-template-columns:repeat(3,1fr)}.weekly-grid{min-width:500px}}
+        @media(max-width:480px){.app-title{font-size:13px}.date-tabs{grid-template-columns:repeat(5,1fr);gap:3px}.btn-label{display:none}}
         ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
         .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 24px;border-radius:var(--radius);font-weight:600;font-size:13px;z-index:9000;box-shadow:var(--shadow-lg);animation:toastIn .3s ease-out}
         @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
@@ -272,10 +272,10 @@
         @media print{#login-overlay,header,.date-tabs,.todo-section,.part-header,.minute-header-row,.sidebar{display:none!important}.time-row.collapsed{display:grid!important}.bottom-grid{grid-template-columns:1fr}}
     </style>
 </head>
-<body onclick="closeTodoPopups()">
+<body>
 <div id="login-overlay"><div class="login-box">
     <div class="login-title">📅 DAILY SCHEDULE 24</div>
-    <div class="login-subtitle">v6.1 — テンプレート＆週間ビュー搭載</div>
+    <div class="login-subtitle">v6.2 — 最適化版</div>
     <div class="login-field">
         <input type="password" id="pw-input" placeholder="パスワード" onkeydown="if(event.key==='Enter')checkLogin()">
         <button onclick="checkLogin()">ログイン</button>
@@ -343,16 +343,14 @@
         <div class="view-tab" onclick="switchView('weekly')">📊 週間ビュー</div>
     </div>
 
-    <!-- Template Palette -->
-    <div class="template-section">
-        <div class="template-header"><span>📦 テンプレート</span><button class="tpl-save-btn" onclick="openTplManager()">管理</button></div>
-        <div class="template-grid" id="tpl-grid"></div>
-    </div>
-
     <!-- Daily View -->
     <div class="view-content active" id="view-daily">
-    <div class="todo-section" id="todo-ui"></div>
     <div class="timeline-wrapper" id="timeline-ui"></div>
+    <!-- Template Palette (タイムライン直下) -->
+    <div class="template-section">
+        <div class="template-header"><span>📦 テンプレート — ドラッグでタイムラインへ配置</span><button class="tpl-save-btn" onclick="openTplManager()">管理</button></div>
+        <div class="template-grid" id="tpl-grid"></div>
+    </div>
     <div class="bottom-grid">
         <div class="info-panel"><div class="info-panel-title">📝 Diary — 内省・反省</div><textarea id="diary-text" placeholder="今日の振り返りを記入してください…"></textarea></div>
         <div class="info-panel"><div class="info-panel-title">📌 Notices — 連絡事項</div><div id="notices-ui"></div></div>
@@ -659,7 +657,7 @@ function startRealtimeSync(){
             isSyncingFromCloud=true;db=JSON.parse(c.db);
             masterTodos=c.todos?JSON.parse(c.todos):masterTodos;
             localStorage.setItem('D24_DB',JSON.stringify(db));localStorage.setItem('D24_TODOS',JSON.stringify(masterTodos));
-            renderNotices();renderGoals();loadDate(currentDate);setTimeout(()=>{isSyncingFromCloud=false;},500);
+            loadDate(currentDate);setTimeout(()=>{isSyncingFromCloud=false;},500);
         }}
     },()=>updateSyncStatus(false));
 }
@@ -686,12 +684,11 @@ let dragInfo=null,editIdx=null,autoSaveTimer=null;
 function flashAutoSave(){const el=document.getElementById('autosave-ind');el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1200);}
 function triggerAutoSave(){clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{saveDataSilent();flashAutoSave();},8000);}
 function saveDataSilent(){
-    collectTodos();collectNotices();collectGoals();
+    collectNotices();collectGoals();
     db[currentDate]=Object.assign(db[currentDate]||{},{acts:db[currentDate]?.acts||[],diary:document.getElementById('diary-text').value,notices:db[currentDate]?.notices||["","","","",""],goals:db[currentDate]?.goals||["","","","","","","","","",""]});
     localStorage.setItem('D24_DB',JSON.stringify(db));localStorage.setItem('D24_TODOS',JSON.stringify(masterTodos));
     saveToCloud();
 }
-function collectTodos(){masterTodos=Array.from(document.querySelectorAll('.todo-card')).map(c=>({done:c.querySelector('.t-check').checked,text:c.querySelector('.t-text').value,mins:c.querySelector('.t-time').value,color:c.querySelector('.todo-color-dot').style.backgroundColor,finished:c.classList.contains('is-finished')}));}
 function collectNotices(){const inps=document.querySelectorAll('.notice-input');if(inps.length>0){if(!db[currentDate])db[currentDate]={acts:[],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};db[currentDate].notices=Array.from(inps).map(inp=>inp.value);}}
 function collectGoals(){const inps=document.querySelectorAll('.goal-input');if(inps.length>0){if(!db[currentDate])db[currentDate]={acts:[],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};db[currentDate].goals=Array.from(inps).map(inp=>inp.value);}}
 
@@ -699,9 +696,9 @@ function collectGoals(){const inps=document.querySelectorAll('.goal-input');if(i
 //  ログイン・初期化
 // ================================================================
 function checkLogin(){
-    if(document.getElementById('pw-input').value==='1234'){
+    if(document.getElementById('pw-input').value==='8714'){
         document.getElementById('login-overlay').style.display='none';
-        userDocId='user_1234';initFirebase();init();
+        userDocId='user_8714';initFirebase();init();
     }else showToast('⚠️ パスワードが違います',2000);
 }
 function init(){
@@ -710,6 +707,7 @@ function init(){
     document.getElementById('diary-text').addEventListener('input',triggerAutoSave);
     initGoogleAuth();startAlarmChecker();requestNotificationPermission();
 }
+
 function showToast(msg,dur=1800){const ex=document.querySelector('.toast');if(ex)ex.remove();const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>{t.classList.add('fade-out');setTimeout(()=>t.remove(),300);},dur);}
 
 // ================================================================
@@ -746,11 +744,6 @@ function buildMiniCal(md){
 // ================================================================
 function renderPalette(){const c=document.getElementById('edit-palette');c.innerHTML='';COLORS.forEach(col=>{const d=document.createElement('div');d.className='color-dot-choice';d.style.background=col;d.onclick=()=>{document.getElementById('edit-color-val').value=col;c.querySelectorAll('.color-dot-choice').forEach(x=>x.classList.remove('selected'));d.classList.add('selected');};c.appendChild(d);});}
 function renderDates(base){const ui=document.getElementById('date-ui');ui.innerHTML='';const curr=new Date(base),tISO=new Date().toISOString().split('T')[0],mob=window.innerWidth<=768,rng=mob?[-2,2]:[-4,5];for(let i=rng[0];i<=rng[1];i++){let d=new Date(curr);d.setDate(curr.getDate()+i);let iso=d.toISOString().split('T')[0],dow=d.getDay();let btn=document.createElement('div');let cls='date-btn';if(iso===currentDate)cls+=' active';if(iso===tISO&&iso!==currentDate)cls+=' today-marker';if(dow===0)cls+=' sun';if(dow===6)cls+=' sat';if(Math.abs(i)>2)cls+=' date-btn-extra';btn.className=cls;btn.innerHTML='<span class="weekday">'+['日','月','火','水','木','金','土'][dow]+'</span><span class="day-num">'+(d.getMonth()+1)+'/'+d.getDate()+'</span>';btn.onclick=()=>loadDate(iso);ui.appendChild(btn);}}
-function renderTodos(){const ui=document.getElementById('todo-ui');ui.innerHTML='';const tt=document.createElement('div');tt.className='todo-section-title';tt.innerHTML='📌 今日のタスク';ui.appendChild(tt);for(let i=0;i<9;i++){const ip=i>=6,sv=masterTodos[i]||{};const dv=document.createElement('div');dv.className='todo-card'+(sv.finished?' is-finished':'');const cc=ip?'#dc2626':(sv.color||COLORS[i%COLORS.length]);dv.innerHTML='<input type="checkbox" class="t-check" '+(sv.done?'checked':'')+'><input type="text" class="t-text" value="'+(sv.text||(ip?'ポモドーロ '+(i-5):'予定 '+(i+1)))+'"><input type="number" class="t-time" value="'+(sv.mins||(ip?25:15))+'" step="5" min="5"><div class="todo-color-dot" style="background:'+cc+'" onclick="showTodoPopup(event,'+i+')"></div><div class="todo-palette-popup" id="todo-popup-'+i+'"></div><button class="todo-finish-btn" onclick="toggleFinish(this)">済</button>';const pp=dv.querySelector('.todo-palette-popup');COLORS.forEach(c=>{const d=document.createElement('div');d.className='mini-color-dot';d.style.background=c;d.onclick=e=>{e.stopPropagation();setTodoColor(i,c);pp.style.display='none';};pp.appendChild(d);});dv.querySelector('.t-text').addEventListener('input',triggerAutoSave);dv.querySelector('.t-time').addEventListener('input',triggerAutoSave);dv.querySelector('.t-check').addEventListener('change',triggerAutoSave);dv.draggable=true;dv.ondragstart=()=>{dragInfo={type:'new',name:dv.querySelector('.t-text').value,mins:parseInt(dv.querySelector('.t-time').value),color:rgb2hex(dv.querySelector('.todo-color-dot').style.backgroundColor)};};ui.appendChild(dv);}}
-function showTodoPopup(e,i){e.stopPropagation();closeTodoPopups();document.getElementById('todo-popup-'+i).style.display='grid';}
-function closeTodoPopups(){document.querySelectorAll('.todo-palette-popup').forEach(p=>p.style.display='none');}
-function setTodoColor(x,c){document.querySelectorAll('.todo-card')[x].querySelector('.todo-color-dot').style.backgroundColor=c;triggerAutoSave();}
-function toggleFinish(b){b.closest('.todo-card').classList.toggle('is-finished');triggerAutoSave();}
 function renderNotices(){const ui=document.getElementById('notices-ui');ui.innerHTML='';const nts=(db[currentDate]&&db[currentDate].notices)||["","","","",""];for(let i=0;i<5;i++){const r=document.createElement('div');r.className='notice-row';r.innerHTML='<span class="notice-num">'+(i+1)+'</span><input type="text" class="notice-input" value="'+(nts[i]||'').replace(/"/g,'&quot;')+'" placeholder="連絡事項を入力…" data-idx="'+i+'"><button class="notice-copy-btn" onclick="copyNoticeToNextDay('+i+')">→明日</button>';r.querySelector('input').addEventListener('input',triggerAutoSave);ui.appendChild(r);}}
 function copyNoticeToNextDay(idx){collectNotices();const val=(db[currentDate].notices||[])[idx]||'';if(!val){showToast('⚠️ 内容が空です');return;}const d=new Date(currentDate);d.setDate(d.getDate()+1);const nxt=d.toISOString().split('T')[0];if(!db[nxt])db[nxt]={acts:[],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};if(!db[nxt].notices)db[nxt].notices=["","","","",""];db[nxt].notices[idx]=val;saveDataSilent();flashAutoSave();showToast('📋 Notice '+(idx+1)+'を翌日へ複写しました');}
 function renderGoals(){const ui=document.getElementById('goals-ui');ui.innerHTML='';const gls=(db[currentDate]&&db[currentDate].goals)||["","","","","","","","","",""];for(let i=0;i<10;i++){const r=document.createElement('div');r.className='goal-row';r.innerHTML='<span class="goal-num">'+(i+1)+'</span><input type="text" class="goal-input" value="'+(gls[i]||'').replace(/"/g,'&quot;')+'" placeholder="目標を入力…" data-idx="'+i+'">';r.querySelector('input').addEventListener('input',triggerAutoSave);ui.appendChild(r);}}
@@ -777,14 +770,16 @@ function getEffectiveTime(){
     const now=new Date();
     let h=now.getHours(),m=now.getMinutes(),s=now.getSeconds();
     const todayISO=now.toISOString().split('T')[0];
-    // 0時台で、ユーザーが前日の日付を開いている場合 → 24時台として扱う
-    if(h>=0&&h<=0){
+    // 0時台の場合: 前日の24時台として扱うかチェック
+    if(h===0){
         const yesterday=new Date(now);yesterday.setDate(yesterday.getDate()-1);
         const yISO=yesterday.toISOString().split('T')[0];
-        if(currentDate===yISO){h=24;}
+        if(currentDate===yISO){
+            // 前日の日程を表示中 → 24時台
+            return {h:24,m,s,nowSec:24*3600+m*60+s,isOnCurrentDate:true};
+        }
     }
-    const isOnCurrentDate=(todayISO===currentDate||(h===24));
-    return {h,m,s,nowSec:h*3600+m*60+s,isOnCurrentDate};
+    return {h,m,s,nowSec:h*3600+m*60+s,isOnCurrentDate:(todayISO===currentDate)};
 }
 
 function updateCurrentTimeLine(){
@@ -842,7 +837,7 @@ let userLockedDate=false;
 function loadDate(iso){
     userLockedDate=true;currentDate=iso;
     document.getElementById('calendar-picker').value=iso;document.getElementById('current-day-badge').innerText=iso;
-    renderDates(iso);renderTodos();renderSidebarCals();
+    renderDates(iso);renderSidebarCals();
     if(!db[iso]){db[iso]={acts:[{h:5,m:0,duration:90,name:'就寝中',color:'#0891b2'},{h:24,m:30,duration:30,name:'就寝中',color:'#0891b2'}],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};}
     if(!db[iso].notices)db[iso].notices=["","","","",""];if(!db[iso].goals)db[iso].goals=["","","","","","","","","",""];
     document.getElementById('diary-text').value=db[iso].diary||'';
@@ -977,11 +972,17 @@ function requestNotificationPermission(){
 function sendBrowserNotification(title, body, icon){
     if('Notification' in window && Notification.permission==='granted'){
         try{
-            const n=new Notification(title,{body:body,icon:icon||'📅',tag:'daily24-alarm',requireInteraction:true});
+            const n=new Notification(title,{body:body,icon:icon||'📅',tag:'daily24-alarm-'+Date.now(),requireInteraction:true,silent:false});
             setTimeout(()=>n.close(),60000);
+            n.onclick=()=>{window.focus();dismissAlarm();n.close();};
         }catch(e){console.warn('Notification failed:',e);}
     }
 }
+
+// バックグラウンドタブ復帰時にアラームチェックを即実行
+document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden){checkAlarms();updateCurrentTimeLine();}
+});
 
 // ================================================================
 //  リマインダーアラーム機能
