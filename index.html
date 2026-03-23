@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>毎日日程表２４ v6.0</title>
+    <title>毎日日程表２４ v6.1</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -162,6 +162,37 @@
         .time-row.past-row .minute-cells{background:rgba(148,163,184,0.10)}
         .time-row.past-row .hour-label{color:var(--text-muted);opacity:.7}
 
+        /* View Tabs */
+        .view-tabs{display:flex;gap:4px;margin-bottom:10px}
+        .view-tab{flex:1;padding:8px;text-align:center;font-weight:700;font-size:13px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;background:var(--surface);color:var(--text);transition:var(--transition)}
+        .view-tab:hover{border-color:var(--accent);background:var(--accent-light)}
+        .view-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+        .view-content{display:none}.view-content.active{display:block}
+
+        /* Template Palette */
+        .template-section{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);padding:10px;margin-bottom:10px;box-shadow:var(--shadow-sm)}
+        .template-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+        .template-header span{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px}
+        .template-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+        .tpl-card{border:1.5px solid var(--border);border-radius:6px;padding:5px 4px;text-align:center;cursor:grab;transition:var(--transition);font-size:10px;font-weight:700;color:#fff;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-height:36px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+        .tpl-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+        .tpl-card.empty{background:var(--surface-alt);color:var(--text-muted);border-style:dashed;cursor:pointer;font-size:18px}
+        .tpl-card .tpl-dur{font-size:8px;opacity:.8;margin-top:1px}
+        .tpl-save-btn{padding:3px 8px;font-size:10px;font-weight:700;border:1px solid var(--accent);border-radius:4px;background:var(--accent-light);color:var(--accent);cursor:pointer}
+        .tpl-save-btn:hover{background:var(--accent);color:#fff}
+
+        /* Weekly View */
+        .weekly-wrapper{background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow-x:auto;padding:8px}
+        .weekly-grid{display:grid;grid-template-columns:40px repeat(7,1fr);gap:0;min-width:700px}
+        .weekly-day-header{text-align:center;font-size:11px;font-weight:800;padding:6px 2px;border-bottom:2px solid var(--border);font-family:var(--font-mono)}
+        .weekly-day-header.today-col{background:var(--accent-light);color:var(--accent);border-radius:6px 6px 0 0}
+        .weekly-hour-label{font-size:10px;font-weight:700;font-family:var(--font-mono);color:var(--text-muted);text-align:right;padding:0 4px;height:28px;display:flex;align-items:center;justify-content:flex-end;border-right:1px solid var(--border)}
+        .weekly-cell{height:28px;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;position:relative;cursor:pointer}
+        .weekly-cell:hover{background:var(--accent-glow)}
+        .weekly-cell.today-col{background:rgba(37,99,235,0.03)}
+        .weekly-block{position:absolute;left:1px;right:1px;border-radius:3px;font-size:8px;font-weight:700;color:#fff;padding:0 3px;overflow:hidden;white-space:nowrap;z-index:2;cursor:pointer}
+        .weekly-block:hover{opacity:.85}
+
         .act-block{position:absolute;border-radius:5px;color:#fff;font-weight:700;font-size:11px;padding:2px 8px;overflow:hidden;white-space:nowrap;cursor:pointer;z-index:10;box-shadow:0 2px 6px rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.2);line-height:1.4}
         .act-block:hover{box-shadow:0 4px 12px rgba(0,0,0,.35);z-index:15}
         .act-block.gcal-block{border:2px dashed rgba(255,255,255,.5);opacity:.85}
@@ -231,7 +262,7 @@
 
         @media(max-width:1100px){.sidebar{width:280px}}
         @media(max-width:900px){.app-shell{flex-direction:column}.sidebar{width:100%;position:static;order:10}}
-        @media(max-width:768px){.date-tabs{grid-template-columns:repeat(5,1fr)}.date-btn-extra{display:none}.todo-section{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.time-row{height:52px;grid-template-columns:44px 1fr}.minute-header-row{grid-template-columns:44px 1fr;height:20px}.modal{width:95vw}}
+        @media(max-width:768px){.date-tabs{grid-template-columns:repeat(5,1fr)}.date-btn-extra{display:none}.todo-section{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.time-row{height:52px;grid-template-columns:44px 1fr}.minute-header-row{grid-template-columns:44px 1fr;height:20px}.modal{width:95vw}.template-grid{grid-template-columns:repeat(3,1fr)}.weekly-grid{min-width:500px}}
         @media(max-width:480px){.app-title{font-size:13px}.date-tabs{grid-template-columns:repeat(5,1fr);gap:3px}.todo-section{grid-template-columns:1fr}.btn-label{display:none}}
         ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
         .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 24px;border-radius:var(--radius);font-weight:600;font-size:13px;z-index:9000;box-shadow:var(--shadow-lg);animation:toastIn .3s ease-out}
@@ -244,7 +275,7 @@
 <body onclick="closeTodoPopups()">
 <div id="login-overlay"><div class="login-box">
     <div class="login-title">📅 DAILY SCHEDULE 24</div>
-    <div class="login-subtitle">v6.0 — 24時対応完全版</div>
+    <div class="login-subtitle">v6.1 — テンプレート＆週間ビュー搭載</div>
     <div class="login-field">
         <input type="password" id="pw-input" placeholder="パスワード" onkeydown="if(event.key==='Enter')checkLogin()">
         <button onclick="checkLogin()">ログイン</button>
@@ -305,6 +336,21 @@
         </div>
     </header>
     <div id="date-ui" class="date-tabs"></div>
+
+    <!-- View Tabs -->
+    <div class="view-tabs">
+        <div class="view-tab active" onclick="switchView('daily')">📅 日別ビュー</div>
+        <div class="view-tab" onclick="switchView('weekly')">📊 週間ビュー</div>
+    </div>
+
+    <!-- Template Palette -->
+    <div class="template-section">
+        <div class="template-header"><span>📦 テンプレート</span><button class="tpl-save-btn" onclick="openTplManager()">管理</button></div>
+        <div class="template-grid" id="tpl-grid"></div>
+    </div>
+
+    <!-- Daily View -->
+    <div class="view-content active" id="view-daily">
     <div class="todo-section" id="todo-ui"></div>
     <div class="timeline-wrapper" id="timeline-ui"></div>
     <div class="bottom-grid">
@@ -314,6 +360,12 @@
     <div class="goals-section">
         <div class="goals-title"><span>🎯 今月の目標</span><button onclick="copyAllGoalsToNextDay()">📋 まとめて翌日に複写</button></div>
         <div id="goals-ui"></div>
+    </div>
+    </div>
+
+    <!-- Weekly View -->
+    <div class="view-content" id="view-weekly">
+        <div class="weekly-wrapper" id="weekly-ui"></div>
     </div>
 </div>
 </div>
@@ -653,10 +705,10 @@ function checkLogin(){
     }else showToast('⚠️ パスワードが違います',2000);
 }
 function init(){
-    renderTimelineGrid();renderPalette();
+    renderTimelineGrid();renderPalette();renderTemplates();
     loadDate(currentDate);startCurrentTimeLine();renderSidebarCals();
     document.getElementById('diary-text').addEventListener('input',triggerAutoSave);
-    initGoogleAuth();startAlarmChecker();
+    initGoogleAuth();startAlarmChecker();requestNotificationPermission();
 }
 function showToast(msg,dur=1800){const ex=document.querySelector('.toast');if(ex)ex.remove();const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>{t.classList.add('fade-out');setTimeout(()=>t.remove(),300);},dur);}
 
@@ -725,13 +777,14 @@ function getEffectiveTime(){
     const now=new Date();
     let h=now.getHours(),m=now.getMinutes(),s=now.getSeconds();
     const todayISO=now.toISOString().split('T')[0];
-    if(h===0&&currentDate!==todayISO){
-        // 0時台だが表示日が今日ではない → 昨日の24時台として扱うか確認
+    // 0時台で、ユーザーが前日の日付を開いている場合 → 24時台として扱う
+    if(h>=0&&h<=0){
         const yesterday=new Date(now);yesterday.setDate(yesterday.getDate()-1);
         const yISO=yesterday.toISOString().split('T')[0];
-        if(currentDate===yISO){h=24;}// 昨日の24時台
+        if(currentDate===yISO){h=24;}
     }
-    return {h,m,s,nowSec:h*3600+m*60+s,isOnCurrentDate:(todayISO===currentDate||(h===24))};
+    const isOnCurrentDate=(todayISO===currentDate||(h===24));
+    return {h,m,s,nowSec:h*3600+m*60+s,isOnCurrentDate};
 }
 
 function updateCurrentTimeLine(){
@@ -751,7 +804,6 @@ function updateCurrentTimeLine(){
     document.querySelectorAll('.time-row[data-h]').forEach(r=>{const rh=parseInt(r.dataset.h);if(rh<h)r.classList.add('past-row');});
 }
 
-function loadDate(iso){currentDate=iso;document.getElementById('calendar-picker').value=iso;document.getElementById('current-day-badge').innerText=iso;renderDates(iso);renderTodos();renderSidebarCals();if(!db[iso]){db[iso]={acts:[{h:5,m:0,duration:90,name:'就寝中',color:'#0891b2'},{h:24,m:30,duration:30,name:'就寝中',color:'#0891b2'}],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};}if(!db[iso].notices)db[iso].notices=["","","","",""];if(!db[iso].goals)db[iso].goals=["","","","","","","","","",""];document.getElementById('diary-text').value=db[iso].diary||'';renderNotices();renderGoals();refreshTimeline();if(gcalAccessToken)fetchGoogleCalendar();}
 
 function refreshTimeline(){document.querySelectorAll('.act-block').forEach(b=>b.remove());const acts=db[currentDate].acts||[];const lanes=calculateLanes(acts);acts.forEach((a,idx)=>{const lane=lanes[idx];let rem=a.duration,curH=a.h,curM=a.m;while(rem>0&&curH<=24){const rc=document.querySelector('.time-row[data-h="'+curH+'"] .minute-cells');if(!rc)break;let dur=Math.min(rem,60-curM);const dv=document.createElement('div');dv.className='act-block';dv.draggable=true;dv.style.left=(curM/60*100)+'%';dv.style.width=(dur/60*100)+'%';dv.style.backgroundColor=a.color;dv.innerText=(curM===a.m)?(a.reminder&&a.reminder.enabled?'🔔 ':'')+a.name:'';if(lane===-1){dv.style.height='54px';dv.style.top='2px';}else if(lane===0){dv.style.height='27px';dv.style.top='1px';}else{dv.style.height='27px';dv.style.top='31px';}dv.onclick=e=>{e.stopPropagation();openEdit(idx);};dv.ondragstart=()=>{dragInfo={type:'move',index:idx,data:a};};rc.appendChild(dv);rem-=dur;curH++;curM=0;}});updateCurrentTimeLine();}
 
@@ -782,6 +834,154 @@ function exportJSON(){const d={db,masterTodos};const b=new Blob([JSON.stringify(
 function importJSON(e){const r=new FileReader();r.onload=()=>{try{const imp=JSON.parse(r.result);if(imp.db){db=imp.db;masterTodos=imp.masterTodos||masterTodos;}else{db=imp;}localStorage.setItem('D24_DB',JSON.stringify(db));localStorage.setItem('D24_TODOS',JSON.stringify(masterTodos));loadDate(currentDate);saveToCloud();showToast('📥 同期完了');}catch(err){showToast('⚠️ ファイル読込エラー',3000);}};r.readAsText(e.target.files[0]);}
 window.addEventListener('resize',()=>renderDates(currentDate));
 window.addEventListener('beforeunload',()=>saveDataSilent());
+
+// ================================================================
+//  24時台修正: 手動切替ガード
+// ================================================================
+let userLockedDate=false;
+function loadDate(iso){
+    userLockedDate=true;currentDate=iso;
+    document.getElementById('calendar-picker').value=iso;document.getElementById('current-day-badge').innerText=iso;
+    renderDates(iso);renderTodos();renderSidebarCals();
+    if(!db[iso]){db[iso]={acts:[{h:5,m:0,duration:90,name:'就寝中',color:'#0891b2'},{h:24,m:30,duration:30,name:'就寝中',color:'#0891b2'}],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};}
+    if(!db[iso].notices)db[iso].notices=["","","","",""];if(!db[iso].goals)db[iso].goals=["","","","","","","","","",""];
+    document.getElementById('diary-text').value=db[iso].diary||'';
+    renderNotices();renderGoals();refreshTimeline();renderWeeklyView();
+    if(gcalAccessToken)fetchGoogleCalendar();
+}
+
+// ================================================================
+//  ビュー切替（日別 ↔ 週間）
+// ================================================================
+function switchView(mode){
+    document.querySelectorAll('.view-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.view-content').forEach(c=>c.classList.remove('active'));
+    if(mode==='weekly'){
+        document.querySelectorAll('.view-tab')[1].classList.add('active');
+        document.getElementById('view-weekly').classList.add('active');
+        renderWeeklyView();
+    }else{
+        document.querySelectorAll('.view-tab')[0].classList.add('active');
+        document.getElementById('view-daily').classList.add('active');
+    }
+}
+
+// ================================================================
+//  週間ビュー
+// ================================================================
+function renderWeeklyView(){
+    const ui=document.getElementById('weekly-ui');
+    const base=new Date(currentDate);
+    const dayOfWeek=base.getDay();
+    const monday=new Date(base);monday.setDate(base.getDate()-(dayOfWeek===0?6:dayOfWeek-1));
+    const todayISO=new Date().toISOString().split('T')[0];
+    const days=[];for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(monday.getDate()+i);days.push(d.toISOString().split('T')[0]);}
+    const dNames=['月','火','水','木','金','土','日'];
+    const hours=[];for(let h=5;h<=24;h++)hours.push(h);
+
+    let html='<div class="weekly-grid" style="grid-template-rows:auto repeat('+hours.length+',28px)">';
+    // Header
+    html+='<div class="weekly-hour-label" style="border-bottom:2px solid var(--border)"></div>';
+    days.forEach((iso,i)=>{
+        const d=new Date(iso+'T00:00:00');const isToday=iso===todayISO;const isSel=iso===currentDate;
+        let cls='weekly-day-header';if(isToday)cls+=' today-col';
+        let style=isSel?'outline:2px solid var(--accent);outline-offset:-2px;border-radius:6px 6px 0 0;':'';
+        html+='<div class="'+cls+'" style="'+style+'cursor:pointer" onclick="loadDate(\''+iso+'\');switchView(\'daily\')">'
+            +dNames[i]+'<br><span style="font-size:13px">'+(d.getMonth()+1)+'/'+d.getDate()+'</span></div>';
+    });
+    // Grid
+    hours.forEach(h=>{
+        html+='<div class="weekly-hour-label">'+(h===24?'0':h)+'</div>';
+        days.forEach(iso=>{
+            const isToday=iso===todayISO;
+            html+='<div class="weekly-cell'+(isToday?' today-col':'')+'" data-wiso="'+iso+'" data-wh="'+h+'"></div>';
+        });
+    });
+    html+='</div>';
+    ui.innerHTML=html;
+
+    // Place blocks
+    days.forEach(iso=>{
+        const dayData=db[iso];if(!dayData||!dayData.acts)return;
+        dayData.acts.forEach(a=>{
+            const startH=a.h;const startM=a.m;
+            hours.forEach((h,hi)=>{
+                if(h!==startH)return;
+                const cell=ui.querySelector('.weekly-cell[data-wiso="'+iso+'"][data-wh="'+h+'"]');
+                if(!cell)return;
+                const topPx=(startM/60)*28;
+                const heightPx=Math.max(4,Math.min((a.duration/60)*28,28*4));
+                const blk=document.createElement('div');blk.className='weekly-block';
+                blk.style.top=topPx+'px';blk.style.height=heightPx+'px';
+                blk.style.backgroundColor=a.color;blk.textContent=a.name;
+                blk.title=h+':'+String(a.m).padStart(2,'0')+' '+a.name+' ('+a.duration+'分)';
+                blk.onclick=()=>{loadDate(iso);switchView('daily');};
+                cell.appendChild(blk);
+            });
+        });
+    });
+}
+
+// ================================================================
+//  テンプレート機能（15個）
+// ================================================================
+let templates=JSON.parse(localStorage.getItem('D24_TEMPLATES'))||[];
+
+function renderTemplates(){
+    const grid=document.getElementById('tpl-grid');grid.innerHTML='';
+    for(let i=0;i<15;i++){
+        const t=templates[i];
+        if(t&&t.name){
+            const card=document.createElement('div');card.className='tpl-card';
+            card.style.background=t.color||'#2563eb';
+            card.innerHTML='<span>'+t.name+'</span><span class="tpl-dur">'+t.duration+'分</span>';
+            card.draggable=true;
+            card.title=t.name+' ('+t.duration+'分) — ドラッグでタイムラインへ配置、右クリックで削除';
+            card.ondragstart=()=>{dragInfo={type:'new',name:t.name,mins:t.duration,color:t.color};};
+            card.oncontextmenu=(e)=>{e.preventDefault();if(confirm('「'+t.name+'」を削除しますか？')){templates[i]=null;localStorage.setItem('D24_TEMPLATES',JSON.stringify(templates));renderTemplates();showToast('🗑 テンプレート削除');}};
+            grid.appendChild(card);
+        }else{
+            const card=document.createElement('div');card.className='tpl-card empty';
+            card.textContent='+';card.title='クリックでテンプレート登録';
+            card.onclick=()=>openTplRegister(i);
+            grid.appendChild(card);
+        }
+    }
+}
+
+function openTplRegister(idx){
+    const name=prompt('テンプレート名:','新規予定');if(!name)return;
+    const dur=parseInt(prompt('所要時間（分）:','15'))||15;
+    const colorIdx=Math.floor(Math.random()*COLORS.length);
+    templates[idx]={name,duration:dur,color:COLORS[colorIdx]};
+    localStorage.setItem('D24_TEMPLATES',JSON.stringify(templates));
+    renderTemplates();showToast('✅ テンプレート「'+name+'」を登録しました');
+}
+
+function openTplManager(){
+    let msg='現在のテンプレート:\n';
+    for(let i=0;i<15;i++){const t=templates[i];msg+=(i+1)+'. '+(t&&t.name?t.name+' ('+t.duration+'分)':'(空)')+'\n';}
+    msg+='\n空き枠をクリックして登録、右クリックで削除できます。\n全削除しますか？';
+    if(confirm(msg)){templates=[];localStorage.setItem('D24_TEMPLATES',JSON.stringify(templates));renderTemplates();showToast('🗑 テンプレートを全削除しました');}
+}
+
+// ================================================================
+//  Web Notifications API
+// ================================================================
+function requestNotificationPermission(){
+    if('Notification' in window && Notification.permission==='default'){
+        Notification.requestPermission();
+    }
+}
+
+function sendBrowserNotification(title, body, icon){
+    if('Notification' in window && Notification.permission==='granted'){
+        try{
+            const n=new Notification(title,{body:body,icon:icon||'📅',tag:'daily24-alarm',requireInteraction:true});
+            setTimeout(()=>n.close(),60000);
+        }catch(e){console.warn('Notification failed:',e);}
+    }
+}
 
 // ================================================================
 //  リマインダーアラーム機能
@@ -880,6 +1080,8 @@ function showAlarmPopup(title,timeStr,bodyText,subText,icon,titleClass,soundType
     document.getElementById('alarm-overlay').classList.add('show');
     currentAlarmAudioStop=playAlarmSound(soundType||'alarm1');
     alarmAutoCloseTimer=setTimeout(dismissAlarm,60000);
+    // ブラウザ通知（別タブでも表示）
+    sendBrowserNotification(title+' — '+timeStr, bodyText+' '+subText);
 }
 
 function dismissAlarm(){
