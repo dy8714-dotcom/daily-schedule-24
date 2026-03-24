@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>毎日日程表２４ v6.2</title>
+    <title>毎日日程表２４ v6.3</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -275,7 +275,7 @@
 <body>
 <div id="login-overlay"><div class="login-box">
     <div class="login-title">📅 DAILY SCHEDULE 24</div>
-    <div class="login-subtitle">v6.2 — 最適化版</div>
+    <div class="login-subtitle">v6.3 — テンプレート同期＆データ修復</div>
     <div class="login-field">
         <input type="password" id="pw-input" placeholder="パスワード" onkeydown="if(event.key==='Enter')checkLogin()">
         <button onclick="checkLogin()">ログイン</button>
@@ -333,6 +333,7 @@
             <button class="btn" onclick="document.getElementById('file-input').click()">📥 <span class="btn-label">同期(入)</span></button>
             <input type="file" id="file-input" style="display:none" onchange="importJSON(event)">
             <button class="btn btn-primary" onclick="saveData(true)">💾 保存</button>
+                <button class="btn" onclick="repairAllData()" title="全日程のゴーストデータを修復">🔧</button>
         </div>
     </header>
     <div id="date-ui" class="date-tabs"></div>
@@ -656,6 +657,7 @@ function startRealtimeSync(){
             const c=doc.data();if(c.db){
             isSyncingFromCloud=true;db=JSON.parse(c.db);
             masterTodos=c.todos?JSON.parse(c.todos):masterTodos;
+            if(c.templates){templates=JSON.parse(c.templates);localStorage.setItem('D24_TEMPLATES',JSON.stringify(templates));renderTemplates();}
             localStorage.setItem('D24_DB',JSON.stringify(db));localStorage.setItem('D24_TODOS',JSON.stringify(masterTodos));
             loadDate(currentDate);setTimeout(()=>{isSyncingFromCloud=false;},500);
         }}
@@ -664,7 +666,7 @@ function startRealtimeSync(){
 function saveToCloud(){
     if(!firebaseReady||!userDocId||isSyncingFromCloud)return;
     firestoreDb.collection('schedules').doc(userDocId).set({
-        db:JSON.stringify(db),todos:JSON.stringify(masterTodos),
+        db:JSON.stringify(db),todos:JSON.stringify(masterTodos),templates:JSON.stringify(templates),
         updatedAt:firebase.firestore.FieldValue.serverTimestamp()
     }).catch(()=>{});
 }
@@ -761,7 +763,7 @@ function countOverlapsAtSlot(acts,s){const se=s+5;return acts.filter(a=>{const r
 function canAddBlock(h,m,dur,ex){const acts=(db[currentDate].acts||[]).filter((_,i)=>i!==ex);const ns=h*60+m,ne=ns+dur;for(let t=ns;t<ne;t+=5){if(countOverlapsAtSlot(acts,t)>=2)return false;}return true;}
 function calculateLanes(acts){const lanes=new Array(acts.length).fill(-1);for(let i=0;i<acts.length;i++){for(let j=i+1;j<acts.length;j++){if(blocksOverlap(acts[i],acts[j])){const si=acts[i].h*60+acts[i].m,sj=acts[j].h*60+acts[j].m;if(si<=sj){if(lanes[i]===-1)lanes[i]=0;if(lanes[j]===-1)lanes[j]=1;}else{if(lanes[j]===-1)lanes[j]=0;if(lanes[i]===-1)lanes[i]=1;}}}}return lanes;}
 
-function handleCellClick(h,m,cl){const acts=db[currentDate].acts||[];const cm=h*60+m;const ex=acts.filter(a=>{const r=getBlockRange(a);return r.start<=cm&&cm<r.end;});if(ex.length===0){if(!canAddBlock(h,m,15,-1)){showToast('⚠️ 重複上限');return;}db[currentDate].acts.push({h,m,duration:15,name:'新規予定',color:COLORS[3]});saveDataSilent();refreshTimeline();flashAutoSave();showToast('✅ 新規予定を追加');}else if(ex.length===1&&cl===1){if(!canAddBlock(h,m,15,-1)){showToast('⚠️ 重複上限');return;}db[currentDate].acts.push({h,m,duration:15,name:'新規予定',color:COLORS[4]});saveDataSilent();refreshTimeline();flashAutoSave();showToast('✅ ダブルワーク追加');}else if(ex.length===1&&cl===0){const idx=acts.indexOf(ex[0]);if(idx>=0)openEdit(idx);}else if(ex.length>=2){showToast('⚠️ 3つ以上は入れられません',3000);}}
+function handleCellClick(h,m,cl){const acts=db[currentDate].acts||[];const cm=h*60+m;const ex=acts.filter(a=>{const r=getBlockRange(a);return r.start<=cm&&cm<r.end;});if(ex.length===0){if(!canAddBlock(h,m,15,-1)){showToast('⚠️ 重複上限（🔧ボタンで修復を試してください）',3000);return;}db[currentDate].acts.push({h,m,duration:15,name:'新規予定',color:COLORS[3]});saveDataSilent();refreshTimeline();flashAutoSave();showToast('✅ 新規予定を追加');}else if(ex.length===1&&cl===1){if(!canAddBlock(h,m,15,-1)){showToast('⚠️ 重複上限',2500);return;}db[currentDate].acts.push({h,m,duration:15,name:'新規予定',color:COLORS[4]});saveDataSilent();refreshTimeline();flashAutoSave();showToast('✅ ダブルワーク追加');}else if(ex.length===1&&cl===0){const idx=acts.indexOf(ex[0]);if(idx>=0)openEdit(idx);}else if(ex.length>=2){const names=ex.map(a=>a.name).join(', ');showToast('⚠️ 3つ以上は入れられません（'+names+'）',3000);}}
 
 function startCurrentTimeLine(){updateCurrentTimeLine();setInterval(updateCurrentTimeLine,5000);}
 
@@ -840,6 +842,8 @@ function loadDate(iso){
     renderDates(iso);renderSidebarCals();
     if(!db[iso]){db[iso]={acts:[{h:5,m:0,duration:90,name:'就寝中',color:'#0891b2'},{h:24,m:30,duration:30,name:'就寝中',color:'#0891b2'}],diary:'',notices:["","","","",""],goals:["","","","","","","","","",""]};}
     if(!db[iso].notices)db[iso].notices=["","","","",""];if(!db[iso].goals)db[iso].goals=["","","","","","","","","",""];
+    // ゴーストブロック修復
+    if(cleanupGhostBlocks(iso)){saveDataSilent();showToast('🔧 不正データを自動修復しました');}
     document.getElementById('diary-text').value=db[iso].diary||'';
     renderNotices();renderGoals();refreshTimeline();renderWeeklyView();
     if(gcalAccessToken)fetchGoogleCalendar();
@@ -918,30 +922,55 @@ function renderWeeklyView(){
 }
 
 // ================================================================
-//  テンプレート機能（15個）
+//  テンプレート機能（15個・Cloud同期・並び替え対応）
 // ================================================================
 let templates=JSON.parse(localStorage.getItem('D24_TEMPLATES'))||[];
+let tplDragFrom=-1;
+
+function saveTemplates(){
+    localStorage.setItem('D24_TEMPLATES',JSON.stringify(templates));
+    saveToCloud();
+}
 
 function renderTemplates(){
     const grid=document.getElementById('tpl-grid');grid.innerHTML='';
     for(let i=0;i<15;i++){
         const t=templates[i];
+        const card=document.createElement('div');
+        card.dataset.tplIdx=i;
         if(t&&t.name){
-            const card=document.createElement('div');card.className='tpl-card';
+            card.className='tpl-card';
             card.style.background=t.color||'#2563eb';
             card.innerHTML='<span>'+t.name+'</span><span class="tpl-dur">'+t.duration+'分</span>';
             card.draggable=true;
-            card.title=t.name+' ('+t.duration+'分) — ドラッグでタイムラインへ配置、右クリックで削除';
-            card.ondragstart=()=>{dragInfo={type:'new',name:t.name,mins:t.duration,color:t.color};};
-            card.oncontextmenu=(e)=>{e.preventDefault();if(confirm('「'+t.name+'」を削除しますか？')){templates[i]=null;localStorage.setItem('D24_TEMPLATES',JSON.stringify(templates));renderTemplates();showToast('🗑 テンプレート削除');}};
-            grid.appendChild(card);
+            card.title=t.name+' ('+t.duration+'分)\n左ドラッグ→タイムラインへ配置\nテンプレ内ドラッグ→並び替え\n右クリック→削除';
+            card.ondragstart=(e)=>{
+                tplDragFrom=i;
+                dragInfo={type:'new',name:t.name,mins:t.duration,color:t.color};
+                e.dataTransfer.setData('text/plain','tpl');
+            };
+            card.ondragover=(e)=>e.preventDefault();
+            card.ondrop=(e)=>{e.preventDefault();e.stopPropagation();handleTplReorder(i);};
+            card.oncontextmenu=(e)=>{e.preventDefault();if(confirm('「'+t.name+'」を削除しますか？')){templates[i]=null;saveTemplates();renderTemplates();showToast('🗑 テンプレート削除');}};
         }else{
-            const card=document.createElement('div');card.className='tpl-card empty';
+            card.className='tpl-card empty';
             card.textContent='+';card.title='クリックでテンプレート登録';
             card.onclick=()=>openTplRegister(i);
-            grid.appendChild(card);
+            card.ondragover=(e)=>e.preventDefault();
+            card.ondrop=(e)=>{e.preventDefault();e.stopPropagation();handleTplReorder(i);};
         }
+        grid.appendChild(card);
     }
+}
+
+function handleTplReorder(toIdx){
+    if(tplDragFrom<0||tplDragFrom===toIdx){tplDragFrom=-1;return;}
+    const moved=templates[tplDragFrom];
+    templates[tplDragFrom]=templates[toIdx]||null;
+    templates[toIdx]=moved;
+    tplDragFrom=-1;dragInfo=null;
+    saveTemplates();renderTemplates();
+    showToast('📦 テンプレートを並び替えました');
 }
 
 function openTplRegister(idx){
@@ -949,15 +978,44 @@ function openTplRegister(idx){
     const dur=parseInt(prompt('所要時間（分）:','15'))||15;
     const colorIdx=Math.floor(Math.random()*COLORS.length);
     templates[idx]={name,duration:dur,color:COLORS[colorIdx]};
-    localStorage.setItem('D24_TEMPLATES',JSON.stringify(templates));
+    saveTemplates();
     renderTemplates();showToast('✅ テンプレート「'+name+'」を登録しました');
 }
 
 function openTplManager(){
     let msg='現在のテンプレート:\n';
     for(let i=0;i<15;i++){const t=templates[i];msg+=(i+1)+'. '+(t&&t.name?t.name+' ('+t.duration+'分)':'(空)')+'\n';}
-    msg+='\n空き枠をクリックして登録、右クリックで削除できます。\n全削除しますか？';
-    if(confirm(msg)){templates=[];localStorage.setItem('D24_TEMPLATES',JSON.stringify(templates));renderTemplates();showToast('🗑 テンプレートを全削除しました');}
+    msg+='\n全削除しますか？';
+    if(confirm(msg)){templates=[];saveTemplates();renderTemplates();showToast('🗑 テンプレートを全削除しました');}
+}
+
+// ================================================================
+//  データ修復（ゴーストブロック除去）
+// ================================================================
+function cleanupGhostBlocks(iso){
+    if(!db[iso]||!db[iso].acts)return false;
+    const before=db[iso].acts.length;
+    db[iso].acts=db[iso].acts.filter(a=>{
+        if(!a||typeof a.h!=='number'||typeof a.m!=='number'||typeof a.duration!=='number')return false;
+        if(isNaN(a.h)||isNaN(a.m)||isNaN(a.duration))return false;
+        if(a.h<0||a.h>24||a.m<0||a.m>=60||a.duration<=0)return false;
+        if(!a.name||!a.color)return false;
+        return true;
+    });
+    return before-db[iso].acts.length>0;
+}
+
+function repairAllData(){
+    let totalFixed=0;
+    Object.keys(db).forEach(iso=>{
+        if(cleanupGhostBlocks(iso))totalFixed++;
+    });
+    if(totalFixed>0){
+        saveDataSilent();loadDate(currentDate);
+        showToast('🔧 '+totalFixed+'日分のデータを修復しました');
+    }else{
+        showToast('✅ データに問題はありませんでした');
+    }
 }
 
 // ================================================================
